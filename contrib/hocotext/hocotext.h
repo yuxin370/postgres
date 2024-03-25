@@ -52,7 +52,7 @@ do{ \
 #define buf_put_int(__bp,__v) \
 do { \
     for(int seg = 0 ; seg < 4 ; seg ++,__bp++){      \
-        (*__bp) = (char)( ( __v >> ( 8 * seg ) ) & 0xFF );          \
+        (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
     }                                                               \
 }while(0)
 

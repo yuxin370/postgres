@@ -10,14 +10,14 @@ hocotext_rle_hoco_cmp(struct varlena * left,
                     Oid collid)
 {
 
-    char *lefp;
-    char *lefend;
-	char *righp;
-    char *righend;
-    char* cur_lef = (char *)palloc(131);
-    char* cur_righ = (char *)palloc(131);
-    char *cur_lef_p = cur_lef;
-    char *cur_righ_p = cur_righ;
+    unsigned char *lefp;
+    unsigned char *lefend;
+	unsigned char *righp;
+    unsigned char *righend;
+    unsigned char* cur_lef = (char *)palloc(131);
+    unsigned char* cur_righ = (char *)palloc(131);
+    unsigned char *cur_lef_p = cur_lef;
+    unsigned char *cur_righ_p = cur_righ;
     int32 lef_count = 0;
     int32 righ_count = 0;
 
@@ -163,13 +163,13 @@ hocotext_rle_mixed_cmp(struct varlena * left,
         left is compressed and right is uncompressed.
     */
     int exchange = false;
-    char * righp;
-    char * righend;
-    char * lefp;
-    char * lefend;
+    unsigned char * righp;
+    unsigned char * righend;
+    unsigned char * lefp;
+    unsigned char * lefend;
 
-    char* cur_lef = (char *)palloc(131);
-    char *cur_lef_p = cur_lef;
+    unsigned char* cur_lef = (char *)palloc(131);
+    unsigned char *cur_lef_p = cur_lef;
     int lef_count = 0;
 
     if(!VARATT_IS_COMPRESSED(left) && VARATT_IS_COMPRESSED(right)){
@@ -258,8 +258,8 @@ hocotext_rle_hoco_extract(struct varlena * source,
     memset(result,0,sizeof(result));
 	// const char *sp;
 	// const char *srcend;
-	char *dp;
-	char *destend;
+	unsigned char *dp;
+	unsigned char *destend;
     int32 cur_offset = 0; //offset in raw text
     int32 count = 0;
     int32 type = 1; // 1: repeated  0: single
@@ -279,8 +279,8 @@ hocotext_rle_hoco_extract(struct varlena * source,
 				 errhint("Use the COLLATE clause to set the collation explicitly.")));
 	}
 
-    char * sp = VARDATA_ANY(source);
-    char * srcend = sp + VARSIZE_ANY_EXHDR(source);
+    unsigned char * sp = VARDATA_ANY(source);
+    unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
     int32 rawsize = buf_get_int(sp) & 0x3fffffff;
 
     if(rawsize < offset){

@@ -140,7 +140,7 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
 
     // record rawsize
     int32 rawsize = VARSIZE_ANY_EXHDR(source);
-    printf("compressing rawsize = %d\n",rawsize);
+
     // buf_put_int(bp, rawsize );
     buf_put_int(bp, rawsize | 0x40000000);
     while (THRESHOLD <= dend - dp){
