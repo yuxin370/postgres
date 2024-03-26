@@ -38,20 +38,20 @@ do{ \
     }\
 }while(0)
 
-// little endian
+// big endian
 #define buf_get_int(__bp) \
 ({ \
     int32 value = 0;                                                  \
-    for(int seg = 0 ; seg < 4 ; seg ++,__bp++){                     \
+    for(int seg = 3 ; seg >= 0 ; seg --,__bp++){                     \
         value |=  (int32)((*__bp)&0xFF) << (8*seg);                 \
     }                                                               \
     value;                                                          \
 })
 
-// little endian
+// big endian
 #define buf_put_int(__bp,__v) \
 do { \
-    for(int seg = 0 ; seg < 4 ; seg ++,__bp++){      \
+    for(int seg = 3 ; seg >= 0 ; seg --,__bp++){      \
         (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
     }                                                               \
 }while(0)
@@ -111,17 +111,5 @@ extern int32 hocotext_rle_mixed_cmp(struct varlena * left, struct varlena * righ
 extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str,Oid collid);
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
-
-
-/**
- * ************************************************************
- *                    LZ4 UTILITY FUNCTIONS                   *
- * ************************************************************
-*/
-extern text * hocotext_lz4_hoco_decompression(struct varlena * source,int32 offset,int32 len,Oid collid);
-extern text * hocotext_lz4_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
-extern int32 hocotext_lz4_hoco_cmp(struct varlena * left, struct varlena * right, Oid collid);
-// extern int32 hocotext_lz4_get_next_group(char *sp,char *srcend,char *buffer);
-extern text * hocotext_lz4_hoco_extract_naive(struct varlena * source,int32 offset,int32 len,Oid collid);
 
 #endif          /*HOCOTEXT_H*/

@@ -2,7 +2,9 @@
  * contrib/hocotext/hocotext.c
  */
 #include "hocotext.h"
-
+#include "portability/instr_time.h"
+// #include "commands/explain.h"
+#include <sys/time.h>
 PG_MODULE_MAGIC;
 
 /**
@@ -22,13 +24,23 @@ PG_MODULE_MAGIC;
  * > ??? 11
 */
 
+static double
+elapsed_time(instr_time *starttime)
+{
+	instr_time	endtime;
+
+	INSTR_TIME_SET_CURRENT(endtime);
+	INSTR_TIME_SUBTRACT(endtime, *starttime);
+	return INSTR_TIME_GET_DOUBLE(endtime);
+}
+
 int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oid collid){
-    char leftTag = ((*VARDATA_ANY(left))>>6) & 0x03;
-    char rightTag = ((*VARDATA_ANY(right))>>6) & 0x03;
+    char leftTag = (((unsigned char)(*VARDATA_ANY(left)))>>6) & 0x03;
+    char rightTag = (((unsigned char)(*VARDATA_ANY(right)))>>6) & 0x03;
     Assert(leftTag == rightTag);
     switch (leftTag){
         case 0x00:
-            return hocotext_common_cmp(left,right,collid);
+            // return hocotext_common_cmp(left,right,collid);
         case 0x01:
             return hocotext_rle_hoco_cmp(left,right,collid);
         case 0x02:
@@ -43,7 +55,7 @@ int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oi
 }
 
 text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 len,Oid collid){
-    char tag = ((*VARDATA_ANY(source)) >> 6) & 0x03;
+    char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
     switch (tag){
         case 0x00:
             // return hocotext_common_extract(source,offset,len,collid);
@@ -59,8 +71,9 @@ text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 l
     }
 }
 
+
 text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * str,Oid collid){
-    char tag = ((*VARDATA_ANY(source))>>6) & 0x03;
+    char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
     switch (tag){
         case 0x00:
             // return hocotext_common_insert(source,offset,len,collid);
@@ -77,7 +90,7 @@ text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * s
 }
 
 text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid){
-    char tag = ((*VARDATA_ANY(source))>>6)& 0x03;
+    char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
     switch (tag){
         case 0x00:
             // return hocotext_common_delete(source,offset,len,collid);
@@ -192,7 +205,7 @@ PG_FUNCTION_INFO_V1(hocotext_le); // <=
 PG_FUNCTION_INFO_V1(hocotext_gt); // >
 PG_FUNCTION_INFO_V1(hocotext_ge); // >=
 
-PG_FUNCTION_INFO_V1(hocotext_extract);
+PG_FUNCTION_INFO_V1(hocotext_substring);
 PG_FUNCTION_INFO_V1(hocotext_insert);
 PG_FUNCTION_INFO_V1(hocotext_delete);
 
@@ -224,8 +237,12 @@ hocotext_compress_rle(PG_FUNCTION_ARGS){
     text *source = PG_GETARG_TEXT_PP(0);
     text *result = NULL;
 
+    instr_time	starttime;
+    INSTR_TIME_SET_CURRENT(starttime);
     result = rle_compress(source,NULL,PG_GET_COLLATION());
-
+    double totaltime =0;
+    totaltime += elapsed_time(&starttime);
+    printf("hocotext_compress_rle compress cost %f ms\n",1000.0 * totaltime);
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
@@ -235,9 +252,13 @@ Datum
 hocotext_decompress_rle(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     text *result = NULL;
-
+    instr_time	starttime;
+    INSTR_TIME_SET_CURRENT(starttime);
     result = rle_decompress(source,PG_GET_COLLATION());
-
+    double totaltime =0;
+    totaltime += elapsed_time(&starttime);
+    printf("hocotext_decompress_rle decompress cost %f ms\n",1000.0 * totaltime);
+   
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
@@ -334,13 +355,19 @@ hocotext_ge(PG_FUNCTION_ARGS){
 }
 
 Datum
-hocotext_extract(PG_FUNCTION_ARGS){
+hocotext_substring(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     int32 offset = PG_GETARG_INT32(1);
     int32 len = PG_GETARG_INT32(2);
     text *result = NULL;
+
+    instr_time	starttime;
+    INSTR_TIME_SET_CURRENT(starttime);
     result = hocotext_hoco_extract_helper(source,offset,len,PG_GET_COLLATION());
 
+    double totaltime =0;
+    totaltime += elapsed_time(&starttime);
+    printf("hocotext_substring substring cost %f ms\n",1000.0 * totaltime);
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);

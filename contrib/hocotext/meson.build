@@ -3,7 +3,6 @@
 hocotext_sources = files(
     'hocotext.c',
     'hocotext_rle.c',
-    'hocotext_lz4.c',
     'rle_compress.c'
 )
 

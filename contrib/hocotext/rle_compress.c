@@ -142,6 +142,7 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
     int32 rawsize = VARSIZE_ANY_EXHDR(source);
 
     // buf_put_int(bp, rawsize );
+    // printf("write rawsize = %d  put in buf = %d\n",rawsize,(rawsize | 0x40000000));
     buf_put_int(bp, rawsize | 0x40000000);
     while (THRESHOLD <= dend - dp){
         /**
@@ -167,7 +168,6 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
                 cur_char = *dp;
                 while (cur_index > 0)
                 {
-
                     *bp = ((cur_index + 2) > MAX_REPEATED_SIZE ? (MAX_REPEATED_SIZE-THRESHOLD) : (cur_index + 2 - THRESHOLD) ) | (1 << 7) ;
                     bp ++;
                     *bp = cur_char;
@@ -234,16 +234,17 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
 
 text *
 rle_decompress(struct varlena *source,Oid collid){
-    char * sp = VARDATA_ANY(source);
+    unsigned char * sp = VARDATA_ANY(source);
 
-    char * srcend = sp + VARSIZE_ANY_EXHDR(source);
-
-    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
-
+    unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
+    unsigned char tag = (((unsigned char)(*sp)) >> 6) & 0x03;
+    int32 geta = buf_get_int(sp);
+    int32 rawsize = geta & 0x3fffffff;
     text *result = (text *)palloc(rawsize + VARHDRSZ); 
     memset(result,0,sizeof(result));
-	char *dp = VARDATA_ANY(result);
-	char *destend = VARDATA_ANY(result) + rawsize;
+    // printf("get from buf %d    raw size = %d  \n",geta,rawsize);
+	unsigned char *dp = VARDATA_ANY(result);
+	unsigned char *destend = VARDATA_ANY(result) + rawsize;
     
     int32 repeat_count;
     int32 single_count;
@@ -291,7 +292,7 @@ rle_decompress(struct varlena *source,Oid collid){
 	if (dp != destend || sp != srcend)
     {
         ereport(ERROR,
-				(errmsg("wrong decompression result. dp = %d destend = %d sp = %d srcend = %d",dp,destend,sp = srcend)));
+				(errmsg("wrong decompression result. dp = %d destend = %d sp = %d srcend = %d",dp,destend,sp,srcend)));
     }
 
 

@@ -5,7 +5,6 @@ OBJS = \
 	$(WIN32RES) \
 	hocotext.o \
 	hocotext_rle.o\
-	hocotext_lz4.o\
 	rle_compress.o
 
 EXTENSION = hocotext

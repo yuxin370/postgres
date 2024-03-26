@@ -245,7 +245,6 @@ hocotext_rle_mixed_cmp(struct varlena * left,
     if(lefp < lefend || lef_count > 0) return exchange ? -1 : 1;
     else if(righp < righend) return exchange ? 1 : -1;
     else return 0;
-
 }
 
 
@@ -254,10 +253,112 @@ hocotext_rle_hoco_extract(struct varlena * source,
                         int32 offset,
                         int32 len,
                         Oid collid){
+	unsigned char *dp;
+	unsigned char *destend;
+    int32 cur_offset = 0; //offset in raw text
+    int32 count = 0;
+    int32 type = 1; // 1: repeated  0: single
+    int32 reach = 0;
+    unsigned char * sp = VARDATA_ANY(source);
+    unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
+    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
+
+    offset --;
+    if(offset < 0){
+        len += offset;
+        offset = 0;
+    }
+    if(len < 0){
+        len = 0;
+    }
+    // int32 source_len = 0;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_rle_extract()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
+
+    if(rawsize < offset){
+        offset = rawsize;
+    }
+
+
+    len = offset + len > rawsize ? rawsize - offset : len;
+    text *result = (text *)palloc(len + VARHDRSZ + 10); 
+    memset(result,0,sizeof(result));    
+    dp = VARDATA_ANY(result);
+    destend = VARDATA_ANY(result) + len;
+
+    /**
+     * locate the offset
+     */
+    while(cur_offset < offset || !reach){
+        type = (int32)(((*sp) >> 7) & 1);
+        count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
+        reach = offset - (count + cur_offset) <= 0 ? 1 : 0;
+        if(type == 1){
+            sp += reach ? 1 : 2; 
+        }else{
+            sp += reach ?  offset - cur_offset + 1 : count + 1; 
+        }
+        count -= reach ? offset - cur_offset : 0;
+        cur_offset += reach ? offset - cur_offset : count ; 
+    }
+    while(cur_offset - offset < len && cur_offset < rawsize){
+        if(sp == source->vl_dat){
+            type = (int32)(((*sp) >> 7)&0x1);
+            count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
+        }
+        if(count + cur_offset - offset > len) count = len + offset - cur_offset;
+        
+        if(type == 1){
+            //repeat
+            repeat_buf_copy(dp,(*sp),count);
+            sp ++ ;
+        }else{
+            //single
+            memcpy(dp,sp,count);
+            dp += count;
+            sp += count;
+        }
+        cur_offset += count;
+        type = (int32)(((*sp) >> 7)&0x1);
+        count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
+        sp++;
+    }
+    *dp = '\0';
+    if(!(dp=destend) || cur_offset > rawsize){
+		ereport(ERROR,
+				(errmsg("wrong extraction result. dp = %d destend = %d diff = %d curoffset = %d",dp,destend,destend - dp)));
+    }
+    SET_VARSIZE(result,len+VARHDRSZ);
+    return result;
+}
+
+
+
+text * 
+hocotext_rle_hoco_insert(struct varlena * source,
+                        int32 offset,
+                        text *str,Oid collid){
+
+    text * result;
+    return result;
+}
+
+text * 
+hocotext_rle_hoco_delete(struct varlena * source,
+                        int32 offset,
+                        int32 len,Oid collid){
     text *result = (text *)palloc(len + VARHDRSZ + 10); 
     memset(result,0,sizeof(result));
-	// const char *sp;
-	// const char *srcend;
 	unsigned char *dp;
 	unsigned char *destend;
     int32 cur_offset = 0; //offset in raw text
@@ -318,6 +419,9 @@ hocotext_rle_hoco_extract(struct varlena * source,
         count -= reach ? offset - cur_offset : 0;
         cur_offset += reach ? offset - cur_offset : count ; 
     }
+
+
+
     while(cur_offset - offset < len && cur_offset < rawsize){
         if(sp == source->vl_dat){
             type = (int32)(((*sp) >> 7)&0x1);
@@ -340,29 +444,12 @@ hocotext_rle_hoco_extract(struct varlena * source,
         count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
         sp++;
     }
+
     *dp = '\0';
     if(!(dp=destend) || cur_offset > rawsize){
 		ereport(ERROR,
 				(errmsg("wrong extraction result. dp = %d destend = %d diff = %d curoffset = %d",dp,destend,destend - dp)));
     }
     SET_VARSIZE(result,len+VARHDRSZ);
-    return result;
-}
-
-
-
-text * 
-hocotext_rle_hoco_insert(struct varlena * source,
-                        int32 offset,
-                        text *str,Oid collid){
-    text *result;
-    return result;
-}
-
-text * 
-hocotext_rle_hoco_delete(struct varlena * source,
-                        int32 offset,
-                        int32 len,Oid collid){
-    text *result;
     return result;
 }

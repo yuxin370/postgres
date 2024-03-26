@@ -64,8 +64,6 @@ RETURNS hocotext
 AS 'network_show'
 LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
 
-
-
 --  Implicit and assignment type casts.
 
 CREATE CAST (hocotext AS text)    WITHOUT FUNCTION AS IMPLICIT;
@@ -110,7 +108,7 @@ RETURNS bool
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_extract( hocotext, int4 , int4 )
+CREATE FUNCTION hocotext_substring( hocotext, int4 , int4 )
 RETURNS text
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
