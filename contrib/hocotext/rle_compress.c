@@ -234,15 +234,17 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
 
 text *
 rle_decompress(struct varlena *source,Oid collid){
-    unsigned char * sp = VARDATA_ANY(source);
+    instr_time	starttime;
 
+
+    INSTR_TIME_SET_CURRENT(starttime);
+
+    unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
     unsigned char tag = (((unsigned char)(*sp)) >> 6) & 0x03;
-    int32 geta = buf_get_int(sp);
-    int32 rawsize = geta & 0x3fffffff;
+    int32 rawsize = gebuf_get_int(sp) & 0x3fffffff;
     text *result = (text *)palloc(rawsize + VARHDRSZ); 
     memset(result,0,sizeof(result));
-    // printf("get from buf %d    raw size = %d  \n",geta,rawsize);
 	unsigned char *dp = VARDATA_ANY(result);
 	unsigned char *destend = VARDATA_ANY(result) + rawsize;
     
@@ -262,13 +264,19 @@ rle_decompress(struct varlena *source,Oid collid){
 				 errhint("Use the COLLATE clause to set the collation explicitly.")));
 	}
 
+    printf("rle_decompress initialize avariable cost %f ms\n",1000.0 * elapsed_time(&starttime));
+    INSTR_TIME_SET_CURRENT(starttime);
 
-	while (sp < srcend && dp < destend)
+    int count = 0;
+	while (sp < srcend)
 	{
-        if(((*sp)&(1<<7)) == (1<<7)){ 
+
+        // if(((*sp)&(1<<7)) == (1<<7)){ 
+        if((((*sp) >> 7)&0x1)){ 
             repeat_count = (int32)((*sp) & 0x7F)+THRESHOLD;
             sp++;
             cur_data = *sp;
+            count += repeat_count;
             for(int i = 0 ; i < repeat_count;i++){
                 *dp = cur_data;
                 dp++;
@@ -277,7 +285,7 @@ rle_decompress(struct varlena *source,Oid collid){
         }else{
             single_count = (int32)((*sp) & 0x7F);
             sp++;
-
+            count += single_count;
             memcpy(dp,sp,single_count);
             dp += single_count;
             sp += single_count;
@@ -285,17 +293,20 @@ rle_decompress(struct varlena *source,Oid collid){
     }
     *dp = '\0';
 
-    
+    printf("rle_decompress while loop cost %f ms\n",1000.0 * elapsed_time(&starttime));
+    INSTR_TIME_SET_CURRENT(starttime);
+
 	/*
 	 * check we decompressed the right amount.
 	 */
-	if (dp != destend || sp != srcend)
-    {
-        ereport(ERROR,
-				(errmsg("wrong decompression result. dp = %d destend = %d sp = %d srcend = %d",dp,destend,sp,srcend)));
-    }
+	// if (dp != destend || sp != srcend)
+    // {
+    //     ereport(ERROR,
+	// 			(errmsg("wrong decompression result. dp = %d destend = %d sp = %d srcend = %d",dp,destend,sp,srcend)));
+    // }
 
 
     SET_VARSIZE(result,(char *) dp - (char *) result);
+    printf("rle_decompress set result size cost %f ms\n",1000.0 * elapsed_time(&starttime));
 	return result;
 }

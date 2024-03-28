@@ -2,9 +2,7 @@
  * contrib/hocotext/hocotext.c
  */
 #include "hocotext.h"
-#include "portability/instr_time.h"
 // #include "commands/explain.h"
-#include <sys/time.h>
 PG_MODULE_MAGIC;
 
 /**
@@ -24,15 +22,7 @@ PG_MODULE_MAGIC;
  * > ??? 11
 */
 
-static double
-elapsed_time(instr_time *starttime)
-{
-	instr_time	endtime;
 
-	INSTR_TIME_SET_CURRENT(endtime);
-	INSTR_TIME_SUBTRACT(endtime, *starttime);
-	return INSTR_TIME_GET_DOUBLE(endtime);
-}
 
 int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oid collid){
     char leftTag = (((unsigned char)(*VARDATA_ANY(left)))>>6) & 0x03;

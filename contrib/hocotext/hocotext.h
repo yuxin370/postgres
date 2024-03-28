@@ -9,7 +9,6 @@
 #include "common/hashfn.h"
 #include "utils/builtins.h"
 #include "utils/formatting.h"
-
 #include "access/table.h"
 #include "access/tableam.h"
 #include "utils/varlena.h"
@@ -18,6 +17,8 @@
 #include "access/detoast.h"
 #include "access/toast_internals.h"
 #include "postgres_ext.h"
+#include "portability/instr_time.h"
+#include <sys/time.h>
 
 /**
  * utility functions
@@ -58,6 +59,16 @@ do { \
 
 
 #define RAWDATA_BYTE 4
+
+static double
+elapsed_time(instr_time *starttime)
+{
+	instr_time	endtime;
+
+	INSTR_TIME_SET_CURRENT(endtime);
+	INSTR_TIME_SUBTRACT(endtime, *starttime);
+	return INSTR_TIME_GET_DOUBLE(endtime);
+}
 /**
  * ************************************************************
  *                  HLEP HANDLE FUNCTIONS                     *
