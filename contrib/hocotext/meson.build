@@ -3,7 +3,8 @@
 hocotext_sources = files(
     'hocotext.c',
     'hocotext_rle.c',
-    'rle_compress.c'
+    'rle_compress.c',
+    'tadoc_compress.c'
 )
 
 if host_system == 'windows'

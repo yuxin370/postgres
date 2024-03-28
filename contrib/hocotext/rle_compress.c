@@ -242,7 +242,7 @@ rle_decompress(struct varlena *source,Oid collid){
     unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
     unsigned char tag = (((unsigned char)(*sp)) >> 6) & 0x03;
-    int32 rawsize = gebuf_get_int(sp) & 0x3fffffff;
+    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
     text *result = (text *)palloc(rawsize + VARHDRSZ); 
     memset(result,0,sizeof(result));
 	unsigned char *dp = VARDATA_ANY(result);
