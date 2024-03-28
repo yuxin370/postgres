@@ -103,8 +103,9 @@ typedef struct RLE_Strategy
     int32 min_comp_rate;
 } RLE_Strategy;
 extern const RLE_Strategy *const RLE_strategy_default;
-extern text * rle_compress(struct varlena *source, const RLE_Strategy *strategy,Oid collid);
-extern text * rle_decompress(struct varlena *source,Oid collid);
+
+extern text * rle_compress(struct varlena *source, const RLE_Strategy *strategy, Oid collid);
+extern text * rle_decompress(struct varlena *source, Oid collid);
 
 /*
  * hocotext_rle_*_cmp()
@@ -122,5 +123,12 @@ extern int32 hocotext_rle_mixed_cmp(struct varlena * left, struct varlena * righ
 extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str,Oid collid);
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
+
+/**
+ * tadoc_(de)compress()
+ * internal compression module
+*/
+extern text * tadoc_compress(struct varlena *source, Oid collid);
+extern text * tadoc_decompress(struct varlena *source, Oid collid);
 
 #endif          /*HOCOTEXT_H*/
