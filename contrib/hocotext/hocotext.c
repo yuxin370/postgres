@@ -193,7 +193,8 @@ hocotext_common_cmp(struct varlena * left, struct varlena * right, Oid collid)
 */
 PG_FUNCTION_INFO_V1(hocotext_compress_rle); 
 PG_FUNCTION_INFO_V1(hocotext_decompress_rle); 
-
+PG_FUNCTION_INFO_V1(hocotext_compress_tadoc); 
+PG_FUNCTION_INFO_V1(hocotext_decompress_tadoc); 
 
 /**
 * operating functions
@@ -262,6 +263,30 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
+}
+
+Datum
+hocotext_compress_tadoc(PG_FUNCTION_ARGS) {
+	struct varlena *source = PG_GETARG_TEXT_PP(0);
+	instr_time starttime;
+	INSTR_TIME_SET_CURRENT(starttime);
+	text* result = tadoc_compress(source, PG_GET_COLLATION());
+	double totaltime = elapsed_time(&starttime);
+	printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
+	PG_FREE_IF_COPY(source,0);
+	PG_RETURN_TEXT_P(result);
+}
+
+Datum
+hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
+	struct varlena *source = PG_GETARG_TEXT_PP(0);
+	instr_time starttime;
+	INSTR_TIME_SET_CURRENT(starttime);
+	text* result = tadoc_decompress(source, PG_GET_COLLATION());
+	double totaltime = elapsed_time(&starttime);
+	printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
+	PG_FREE_IF_COPY(source,0);
+	PG_RETURN_TEXT_P(result);
 }
 
 /**

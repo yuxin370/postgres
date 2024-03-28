@@ -1,11 +1,15 @@
 # contrib/hocotext/Makefile
 
+CC = gcc
+CFLAGS = -std=c11
+
 MODULE_big = hocotext
 OBJS = \
 	$(WIN32RES) \
 	hocotext.o \
 	hocotext_rle.o\
-	rle_compress.o
+	rle_compress.o\
+	tadoc_compress.o
 
 EXTENSION = hocotext
 DATA =  hocotext--1.0.sql
