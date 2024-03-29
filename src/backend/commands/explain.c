@@ -573,7 +573,6 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 	DestReceiver *dest;
 	QueryDesc  *queryDesc;
 	instr_time	starttime;
-	instr_time	tagtime1,tagtime2,tagtime3,diff;
 	double		totaltime = 0;
 	int			eflags;
 	int			instrument_option = 0;
@@ -596,8 +595,6 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 	 * this if !es->summary, but it's hardly worth the complication.)
 	 */
 	INSTR_TIME_SET_CURRENT(starttime);
-	INSTR_TIME_SET_CURRENT(tagtime1);
-	printf("[process start] at %f ms\n",1000*INSTR_TIME_GET_DOUBLE(tagtime1));
 
 	/*
 	 * Use a snapshot with an updated command ID to ensure this query sees
@@ -633,9 +630,6 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 	/* call ExecutorStart to prepare the plan for execution */
 	ExecutorStart(queryDesc, eflags);
 
-	INSTR_TIME_SET_CURRENT(tagtime2);
-	diff.ticks = (tagtime2).ticks - (tagtime1).ticks;
-	printf("[query start] end at %f ms, time cost = %f\n",1000*INSTR_TIME_GET_DOUBLE(tagtime2),1000*INSTR_TIME_GET_DOUBLE(diff));
 
 	/* Execute the plan for statistics if asked for */
 	if (es->analyze)
@@ -651,21 +645,13 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 		/* run the plan */
 		ExecutorRun(queryDesc, dir, 0, true);
 
-		INSTR_TIME_SET_CURRENT(tagtime3);
-		diff.ticks = (tagtime3).ticks - (tagtime2).ticks;
-		printf(" -- [query excute] query run end at %f ms, time cost = %f\n",1000*INSTR_TIME_GET_DOUBLE(tagtime3),1000*INSTR_TIME_GET_DOUBLE(diff));
-		
 		/* run cleanup too */
 		ExecutorFinish(queryDesc);
 
 		/* We can't run ExecutorEnd 'till we're done printing the stats... */
 		totaltime += elapsed_time(&starttime);
 	}
-	INSTR_TIME_SET_CURRENT(tagtime1);
-	diff.ticks = (tagtime1).ticks - (tagtime3).ticks;
-	printf(" -- [query excute] query run clean up end at %f ms, time cost = %f\n",1000*INSTR_TIME_GET_DOUBLE(tagtime1),1000*INSTR_TIME_GET_DOUBLE(diff));
-	diff.ticks = (tagtime1).ticks - (tagtime2).ticks;
-	printf("[query plan excute] end at %f ms, time cost = %f\n",1000*INSTR_TIME_GET_DOUBLE(tagtime1),1000*INSTR_TIME_GET_DOUBLE(diff));
+
 
 	ExplainOpenGroup("Query", NULL, true, es);
 
@@ -715,9 +701,6 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 	 */
 	if (es->costs)
 		ExplainPrintJITSummary(es, queryDesc);
-	INSTR_TIME_SET_CURRENT(tagtime2);
-	diff.ticks = (tagtime2).ticks - (tagtime1).ticks;
-	printf("[plan info print] end at %f ms, time cost = %f\n",1000*INSTR_TIME_GET_DOUBLE(tagtime2),1000*INSTR_TIME_GET_DOUBLE(diff));
 	/*
 	 * Close down the query and free resources.  Include time for this in the
 	 * total execution time (although it should be pretty minimal).
@@ -736,9 +719,6 @@ ExplainOnePlan(PlannedStmt *plannedstmt, IntoClause *into, ExplainState *es,
 
 	totaltime += elapsed_time(&starttime);
 
-	INSTR_TIME_SET_CURRENT(tagtime1);
-	diff.ticks = (tagtime1).ticks - (tagtime2).ticks;
-	printf("[query close down and free resources] end at %f ms, time cost = %f\n\n",1000*INSTR_TIME_GET_DOUBLE(tagtime1),1000*INSTR_TIME_GET_DOUBLE(diff));
 	/*
 	 * We only report execution time if we actually ran the query (that is,
 	 * the user specified ANALYZE), and if summary reporting is enabled (the

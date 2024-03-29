@@ -24,11 +24,11 @@
  * utility functions
 */
 
-#define buf_copy_ctrl(__buf,__dp) \
+#define buf_copy_ctrl(__buf,__sp) \
 do { \
-    *__buf = *__dp;                     \
+    *__buf = *__sp;                     \
     __buf ++;                           \
-    __dp ++;                            \
+    __sp ++;                            \
 }while(0)
 
 #define repeat_buf_copy(__dp,__str,__count) \
@@ -69,6 +69,8 @@ elapsed_time(instr_time *starttime)
 	INSTR_TIME_SUBTRACT(endtime, *starttime);
 	return INSTR_TIME_GET_DOUBLE(endtime);
 }
+
+
 /**
  * ************************************************************
  *                  HLEP HANDLE FUNCTIONS                     *
@@ -93,6 +95,15 @@ extern text * hocotext_common_extract(struct varlena * source,int32 offset,int32
 */
 
 /**
+ * Definitions
+ */
+
+#define MAX_REPEATED_SIZE 130
+#define MAX_SINGLE_STORE_SIZE 127
+#define THRESHOLD 3
+
+
+/**
  * rle_(de)compressi()
  * internal compression module
 */
@@ -104,6 +115,7 @@ typedef struct RLE_Strategy
 } RLE_Strategy;
 extern const RLE_Strategy *const RLE_strategy_default;
 
+extern int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *dp);
 extern text * rle_compress(struct varlena *source, const RLE_Strategy *strategy, Oid collid);
 extern text * rle_decompress(struct varlena *source, Oid collid);
 
@@ -114,7 +126,6 @@ extern text * rle_decompress(struct varlena *source, Oid collid);
  */
 
 extern int32 hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right, Oid collid);
-extern int32 hocotext_rle_mixed_cmp(struct varlena * left, struct varlena * right, Oid collid);
 
 /**
  * hocotext_rle_*_*()

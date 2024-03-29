@@ -244,6 +244,16 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     text *result = NULL;
     instr_time	starttime;
+
+    // printf("in outter hocotext_decompress_rle function!\n");
+    // unsigned char * dstart = source;
+    // int size = VARSIZE_ANY_EXHDR(source);
+    // unsigned char * dp = dstart + size + VARHDRSZ;
+    // while(dstart <= dp){
+    //     printChar(*dstart);
+    //     dstart++;
+    // }
+
     INSTR_TIME_SET_CURRENT(starttime);
     result = rle_decompress(source,PG_GET_COLLATION());
     double totaltime =0;
@@ -412,6 +422,15 @@ hocotext_delete(PG_FUNCTION_ARGS){
     text *result = NULL;
 
     result = hocotext_hoco_delete_helper(source,offset,len,PG_GET_COLLATION());
+
+    // printf("in outter hocotext_delete function!\n");
+    // unsigned char * dstart = result;
+    // int size = VARSIZE_ANY_EXHDR(result);
+    // unsigned char * dp = dstart + size + VARHDRSZ;
+    // while(dstart <= dp){
+    //     printChar(*dstart);
+    //     dstart++;
+    // }
 
    PG_FREE_IF_COPY(source,0);
 
