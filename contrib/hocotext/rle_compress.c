@@ -99,6 +99,7 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
                     *dp = cur_char;
                     dp++;
                     sp += (cur_index + 2) > MAX_REPEATED_SIZE ? MAX_REPEATED_SIZE : (cur_index + 2);
+                    printf("[compressing] %d %c\n",cur_index + 2,cur_char);
                     cur_index -= MAX_REPEATED_SIZE;
                 }
             }else{
@@ -205,9 +206,27 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
     //          * 
     //         */
     // }
+    printf("in rle_compress function! source = %s size = %d \n",sp,rawsize);
+    unsigned char * start = source;
+    int size =VARSIZE_ANY_EXHDR(source);
+    unsigned char * dd = start + size + VARHDRSZ;
+    while(start <= dd){
+        printChar(*start);
+        start++;
+    }
+    printf("\n");
 
     int32 result_size = rle_compress_ctrl(sp,srcend,dp);
 
+    printf("in rle_compress function! source = %s size = %d  result = %s ,size = %d\n",sp,VARSIZE_ANY_EXHDR(source),dp + 4,result_size);
+     start = result;
+     size = 4 + result_size;
+     dd = start + size + VARHDRSZ;
+    while(start <= dd){
+        printChar(*start);
+        start++;
+    }
+    printf("\n");
 
     SET_VARSIZE(result,4 + result_size + VARHDRSZ);
     return result;

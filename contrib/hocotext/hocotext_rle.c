@@ -23,7 +23,7 @@ do{ \
         if(__count >= THRESHOLD){                       \
             *__dp = (__count - THRESHOLD) | (1 << 7);   \
             __dp ++;                                    \
-            *dp = *sp;                                  \
+            *dp = *__sp;                                  \
             dp ++;                                      \
         }else{                                          \
             *__dp = __count;                            \
@@ -472,6 +472,15 @@ hocotext_rle_hoco_delete(struct varlena * source,
     int32 type = 1; // 1: repeated  0: single;
     int32 reach = 0,count = 0;
 
+    printf("in outter hocotext_rle_hoco_delete function! source = %s size = %d\n",sp + 4,VARSIZE_ANY_EXHDR(source));
+    unsigned char * start = source;
+    int size = VARSIZE_ANY_EXHDR(source);
+    unsigned char * dd = start + size + VARHDRSZ;
+    while(start <= dd){
+        printChar(*start);
+        start++;
+    }
+
     if((--offset) < 0){
         len += offset;
         offset = 0;
@@ -529,8 +538,8 @@ hocotext_rle_hoco_delete(struct varlena * source,
      * delete characters 
      */
     while(cur_offset - offset < len && cur_offset < rawsize){
+        type = (int32)(((*sp) >> 7) & 1);
         count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
-        reach = offset - (count + cur_offset) <= 0 ? 1 : 0;
         int front_gap = offset - cur_offset;
         int back_gap = cur_offset + count - offset - len;
         if(front_gap > 0 && back_gap > 0){
@@ -598,4 +607,194 @@ hocotext_rle_hoco_delete(struct varlena * source,
     *dp = '\0';
     SET_VARSIZE(result,dp -  dstart + VARHDRSZ);
     return result;
+}
+
+text * 
+hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid){
+unsigned char * sp = VARDATA_ANY(source);
+    unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
+    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
+    int32 cur_offset = 0; //offset in raw text;
+    int32 type = 1; // 1: repeated  0: single;
+    int32 reach = 0,count = 0;
+
+    if((--offset) < 0){
+        len += offset;
+        offset = 0;
+    }
+    if(len < 0) len = 0;
+    // int32 source_len = 0;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_rle_extract()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
+
+    if(rawsize < offset){
+        offset = rawsize;
+    }
+
+
+    len = offset + len > rawsize ? rawsize - offset : len;
+
+
+    int32 str_size = VARSIZE_ANY_EXHDR(str);
+    unsigned char *strp = VARDATA_ANY(str);;
+    unsigned char *cstrp = (unsigned char *)palloc(str_size + 2); // in case the str is bitpacked and of big size. 
+    int32 cstr_size = rle_compress_ctrl(strp,strp + str_size,cstrp);
+    unsigned char *cstrend = cstrp + cstr_size;
+    
+
+    text *result = (text *)palloc(VARSIZE_ANY_EXHDR(source) + cstr_size + 6 + VARHDRSZ); 
+    memset(result,0,sizeof(result));    
+	unsigned char *dstart = VARDATA_ANY(result);
+    unsigned char *dp = dstart;
+    buf_put_int(dp,(rawsize - len + str_size) | 0x40000000);
+ 
+    /**
+     * locate the offset
+     */
+    while(!reach){
+        type = (int32)(((*sp) >> 7) & 1);
+        count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
+        reach = offset - (count + cur_offset) <= 0 ? 1 : 0;
+        if(!reach){
+            if(type == 1){
+                buf_copy_ctrl(dp,sp);
+                buf_copy_ctrl(dp,sp);
+            }else{
+                memcpy(dp,sp,count + 1);
+                dp += count+1;
+                sp += count+1;
+            }
+            cur_offset += count ; 
+            // fore_type = type;
+        }
+    }
+
+    /**
+     * delete characters 
+     */
+    int front_gap , back_gap;
+    while(cur_offset - offset < len && cur_offset < rawsize){
+        count = type == 1 ? (int32)((*sp) & 0x7f) + THRESHOLD : (int32)((*sp) & 0x7f);
+        reach = offset - (count + cur_offset) <= 0 ? 1 : 0;
+        front_gap = offset - cur_offset;
+        back_gap = cur_offset + count - offset - len;
+        if(front_gap > 0 && back_gap > 0){
+            // the pattern can cover the deleted characters
+            if(type == 1){
+                sp ++;
+                buf_rle_value(sp,dp,front_gap,false);
+            }else{
+                *dp = front_gap;
+                dp ++;
+                sp ++;
+                memcpy(dp,sp,front_gap);
+                sp += front_gap + len;
+                dp += front_gap;
+            }
+        }else if (front_gap > 0){
+            // the first pattern to be deleted
+            if(type == 1){
+                buf_rle_value(sp,dp,front_gap,true);
+            }else{
+                *dp = front_gap;
+                dp ++;
+                sp ++;
+                memcpy(dp,sp,front_gap);
+                sp += count;
+                dp += front_gap;
+            }
+        }else if (back_gap > 0){
+            // the last pattern to be deleted
+            if(type == 1){
+                sp++;
+                // buf_rle_value(sp,dp,back_gap,true);
+            }else{
+                // *dp = back_gap;
+                // dp ++;
+                sp += 1 + count - back_gap;
+                // memcpy(dp,sp,back_gap);
+                // sp += back_gap;
+                // dp += back_gap;
+            }
+        }else{
+            // the entire pattern should be deleted
+            if(type == 1){
+                sp += 2;
+            }else{
+                sp += 1 + count;
+            }
+        }
+        cur_offset += count;
+    }
+
+
+    /**
+     * insert characters 
+     */
+    if(back_gap == 0){
+        // insert as a new pattern at the end of an entire pattern
+        memcpy(dp,cstrp,cstr_size);
+        dp += cstr_size;
+    }else{
+        // insert as an independent pattern in the middle of a pattern.
+        if(type == 1){
+            // buf_rle_value(sp,dp,front_gap,false);
+            memcpy(dp,cstrp,cstr_size);
+            dp += cstr_size;
+            buf_rle_value(sp,dp,back_gap,false);
+            sp++;
+        }else{
+            // buf_bit_packed_value(dp,sp,front_gap);
+            memcpy(dp,cstrp,cstr_size);
+            dp += cstr_size;
+            buf_bit_packed_value(dp,sp,back_gap);
+        }            
+    }
+    
+    /**
+     * [todo] reorganize retained values
+     */
+    
+
+    /**
+     * copy rest values
+     */
+    if(srcend != sp){
+        memcpy(dp,sp,srcend - sp);
+        dp += srcend - sp;
+    }
+    *dp = '\0';
+    SET_VARSIZE(result,dp -  dstart + VARHDRSZ);
+    return result;
+}
+
+int32
+hocotext_rle_hoco_char_length(struct varlena *source,Oid collid){
+    unsigned char * sp = VARDATA_ANY(source);
+    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
+
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_rle_cmp()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
+
+	return rawsize;
 }

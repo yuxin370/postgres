@@ -79,6 +79,7 @@ elapsed_time(instr_time *starttime)
 extern int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oid collid);
 extern text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * str,Oid collid);
+extern text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 len,text * str,Oid collid);
 extern text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid);
 /**
  * ************************************************************
@@ -133,7 +134,9 @@ extern int32 hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right
 */
 extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str,Oid collid);
+extern text * hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid);
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
+extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
 
 /**
  * tadoc_(de)compress()
