@@ -139,6 +139,22 @@ extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int3
 extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
 
 /**
+ * tadoc_(de)compress()
+ * internal compression module
+*/
+
+/**
+ * tadoc to_tsvector
+*/
+struct ParsedRule {
+	uint8_t is_parsed;
+	// length of the word array of this rule
+	uint32_t num_word;
+	// start position in the array
+	uint32_t arr_pos;	
+};
+
+/**
  * TADOC Decompressed Rule Entry
 */
 struct DecompRule {
@@ -147,18 +163,12 @@ struct DecompRule {
     char* decomp_start;
     uint32_t decomp_len;
 };
+
+typedef ParsedRule ParsedRule;
+typedef bool uint8;
 typedef struct DecompRule DecompRule;
 
-/**
- * tadoc_(de)compress()
- * internal compression module
-*/
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);
-
-/**
- * tadoc to_tsvector
-*/
-
 
 #endif          /*HOCOTEXT_H*/

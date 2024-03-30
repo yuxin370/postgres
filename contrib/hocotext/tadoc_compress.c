@@ -13,7 +13,6 @@
 */
 struct Symbol;
 struct Rule;
-struct DecompRule;
 union SymbolData;
 typedef struct Symbol Symbol;
 typedef struct Rule Rule;
@@ -779,6 +778,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
     return decomp_rules[0].decomp_len;
 }
 
+#define MIN_BUF_SIZE 100000
 text* tadoc_compress(struct varlena *source, Oid collid) {
 	if (!OidIsValid(collid)) {
 		/*
@@ -795,8 +795,9 @@ text* tadoc_compress(struct varlena *source, Oid collid) {
 
 	char* raw_data_start = VARDATA_ANY(source);
 	uint32_t raw_data_len = VARSIZE_ANY_EXHDR(source);
-	// WARN: sometimes compressed data will be longer than origin data, be careful of it
-	text *dest = (text *)palloc(VARSIZE_ANY_EXHDR(source));
+	// WARN: sometimes compressed data will be longer than origin data, so here we alloc 2 times of origin data
+	uint32 estim_comp_len = VARSIZE_ANY_EXHDR(source) > MIN_BUF_SIZE ? VARSIZE_ANY_EXHDR(source) : MIN_BUF_SIZE * 2;
+	text *dest = (text *)palloc(estim_comp_len);
 	char* comp_data_start = VARDATA_ANY(dest);
 	uint32 comp_size = __tadoc_compress(raw_data_start, raw_data_len, comp_data_start);
 	SET_VARSIZE(dest, comp_size);
