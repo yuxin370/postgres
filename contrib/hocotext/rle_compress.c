@@ -27,9 +27,6 @@
  * Local definitions
  * ----------
  */
-#define MAX_REPEATED_SIZE 130
-#define MAX_SINGLE_STORE_SIZE 127
-#define THRESHOLD 3
 
 #define store_single_buf(__bp,__buf_base,__buf,reach_max) \
 do { \
@@ -66,6 +63,76 @@ static const RLE_Strategy rle_default_strategy = {
 const RLE_Strategy *const RLE_strategy_default = &rle_default_strategy;
 
 
+int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *dp){
+    int32 cur_index = 0;
+    unsigned char cur_char;
+    unsigned char *buf = (char *)palloc(MAX_SINGLE_STORE_SIZE);
+    unsigned char *buf_base = buf;
+	unsigned char *dstart = dp;                         //start of compressed data
+
+    while (THRESHOLD <= srcend - sp){
+        /**
+         * if we already exceed the maximum result size, fail.
+        */
+        // if(dp - dstart >= result_max){
+        //     /**
+        //      * 
+        //      * RETURN raw text
+        //      * 
+        //     */
+        // } 
+        cur_index = 0; /** consequent repeated size */
+        if((*(sp + cur_index)) == (*(sp+cur_index+1))){
+            if((*(sp+cur_index+1)) == (*(sp+cur_index+2))){
+                cur_index ++;
+                while(sp + cur_index + 2 < srcend  && (*(sp + cur_index + 1) == *(sp + cur_index + 2))){
+                    cur_index ++;
+                }
+                if(buf!=buf_base){
+                    store_single_buf(dp,buf_base,buf,false);
+                }
+                cur_char = *sp;
+                while (cur_index > 0)
+                {
+                    *dp = ((cur_index + 2) > MAX_REPEATED_SIZE ? (MAX_REPEATED_SIZE-THRESHOLD) : (cur_index + 2 - THRESHOLD) ) | (1 << 7) ;
+                    dp ++;
+                    *dp = cur_char;
+                    dp++;
+                    sp += (cur_index + 2) > MAX_REPEATED_SIZE ? MAX_REPEATED_SIZE : (cur_index + 2);
+                    printf("[compressing] %d %c\n",cur_index + 2,cur_char);
+                    cur_index -= MAX_REPEATED_SIZE;
+                }
+            }else{
+                buf_copy_ctrl(buf,sp);
+                buf_copy_ctrl(buf,sp);
+            }
+
+
+        }else{
+            buf_copy_ctrl(buf,sp);
+        }
+
+        if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
+            store_single_buf(dp,buf_base,buf,true);
+        }        
+    }
+
+    memcpy(buf,sp,srcend-sp);
+    buf += (srcend - sp);
+
+    if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
+        store_single_buf(dp,buf_base,buf,true);
+    }  
+
+    if(buf!=buf_base){
+        store_single_buf(dp,buf_base,buf,false);
+    }
+    *dp = '\0';
+
+    return (int32)(dp - dstart);
+}
+
+
 /**
  * rle_compress -
  * 
@@ -75,20 +142,13 @@ const RLE_Strategy *const RLE_strategy_default = &rle_default_strategy;
  *            or -1 if compression fails.
 */
 text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid collid){
-
-    char * dp = VARDATA_ANY(source); //uncompressed data
-    char * dend = dp + VARSIZE_ANY_EXHDR(source);//end of uncompressed data
+    char * sp = VARDATA_ANY(source); //uncompressed data
+    char * srcend = sp + VARSIZE_ANY_EXHDR(source);//end of uncompressed data
     text *result = (text *)palloc(VARSIZE_ANY_EXHDR(source) + VARHDRSZ); 
-	char *bp = VARDATA_ANY(result);            //compressed data
-	char *bstart = bp;                         //start of compressed data
-    // int32 need_rate = 99;
-    // int32 result_max;
-    int32 result_size;
-    int32 cur_index = 0;
-    char cur_char;
-    char *buf = (char *)palloc(MAX_SINGLE_STORE_SIZE);
-    char *buf_base;
-    buf_base = buf;
+	char *dp = VARDATA_ANY(result);            //compressed data
+    int32 rawsize = VARSIZE_ANY_EXHDR(source);
+    buf_put_int(dp, rawsize | 0x40000000);     // record rawsize
+
 	if (!OidIsValid(collid))
 	{
 		/*
@@ -104,11 +164,12 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
     /**
      * Our fallback strategy is default.
     */
+
     // if (strategy == NULL){
     //     strategy = RLE_strategy_default;
-
     // }
-
+    // int32 need_rate = 99;
+    // int32 result_max;
     // if(slen < strategy->min_input_size || 
     //     slen > strategy->max_input_size)
     // {
@@ -137,74 +198,6 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
 	// else
 	// 	result_max = (slen * (100 - need_rate)) / 100;
 
-
-    // record rawsize
-    int32 rawsize = VARSIZE_ANY_EXHDR(source);
-
-    // buf_put_int(bp, rawsize );
-    // printf("write rawsize = %d  put in buf = %d\n",rawsize,(rawsize | 0x40000000));
-    buf_put_int(bp, rawsize | 0x40000000);
-    while (THRESHOLD <= dend - dp){
-        /**
-         * if we already exceed the maximum result size, fail.
-        */
-        // if(bp - bstart >= result_max){
-        //     /**
-        //      * 
-        //      * RETURN raw text
-        //      * 
-        //     */
-        // } 
-        cur_index = 0; /** consequent repeated size */
-        if((*(dp + cur_index)) == (*(dp+cur_index+1))){
-            if((*(dp+cur_index+1)) == (*(dp+cur_index+2))){
-                cur_index ++;
-                while(dp + cur_index + 2 < dend  && (*(dp + cur_index + 1) == *(dp + cur_index + 2))){
-                    cur_index ++;
-                }
-                if(buf!=buf_base){
-                    store_single_buf(bp,buf_base,buf,false);
-                }
-                cur_char = *dp;
-                while (cur_index > 0)
-                {
-                    *bp = ((cur_index + 2) > MAX_REPEATED_SIZE ? (MAX_REPEATED_SIZE-THRESHOLD) : (cur_index + 2 - THRESHOLD) ) | (1 << 7) ;
-                    bp ++;
-                    *bp = cur_char;
-                    bp++;
-                    dp += (cur_index + 2) > MAX_REPEATED_SIZE ? MAX_REPEATED_SIZE : (cur_index + 2);
-                    
-                    cur_index -= MAX_REPEATED_SIZE;
-                }
-            }else{
-                buf_copy_ctrl(buf,dp);
-                buf_copy_ctrl(buf,dp);
-            }
-
-
-        }else{
-            buf_copy_ctrl(buf,dp);
-        }
-
-        if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
-            store_single_buf(bp,buf_base,buf,true);
-        }        
-    }
-
-    memcpy(buf,dp,dend-dp);
-    buf += (dend - dp);
-
-    if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
-        store_single_buf(bp,buf_base,buf,true);
-    }  
-
-    if(buf!=buf_base){
-        store_single_buf(bp,buf_base,buf,false);
-    }
-    *bp = '\0';
-
-    result_size = bp - bstart;
-
     // }
     // if(result_size >= result_max){
     //         /**
@@ -213,11 +206,38 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
     //          * 
     //         */
     // }
+    printf("in rle_compress function! source = %s size = %d \n",sp,rawsize);
+    unsigned char * start = source;
+    int size =VARSIZE_ANY_EXHDR(source);
+    unsigned char * dd = start + size + VARHDRSZ;
+    while(start <= dd){
+        printChar(*start);
+        start++;
+    }
+    printf("\n");
 
-    SET_VARSIZE(result,result_size+VARHDRSZ);
+    int32 result_size = rle_compress_ctrl(sp,srcend,dp);
+
+    printf("in rle_compress function! source = %s size = %d  result = %s ,size = %d\n",sp,VARSIZE_ANY_EXHDR(source),dp + 4,result_size);
+     start = result;
+     size = 4 + result_size;
+     dd = start + size + VARHDRSZ;
+    while(start <= dd){
+        printChar(*start);
+        start++;
+    }
+    printf("\n");
+
+    SET_VARSIZE(result,4 + result_size + VARHDRSZ);
     return result;
 }
 
+void printChar(unsigned char a){
+    for(int i = 7 ; i >= 0 ; i --){
+        printf("%d",(a>>i)&0x1);
+    }
+    printf("\n");
+}
 
 /**
  * rle_decompress -
@@ -234,14 +254,13 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
 
 text *
 rle_decompress(struct varlena *source,Oid collid){
-    instr_time	starttime;
-
-
-    INSTR_TIME_SET_CURRENT(starttime);
+    // instr_time	starttime;
+    // INSTR_TIME_SET_CURRENT(starttime);
 
     unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
-    unsigned char tag = (((unsigned char)(*sp)) >> 6) & 0x03;
+
+
     int32 rawsize = buf_get_int(sp) & 0x3fffffff;
     text *result = (text *)palloc(rawsize + VARHDRSZ); 
     memset(result,0,sizeof(result));
@@ -264,15 +283,10 @@ rle_decompress(struct varlena *source,Oid collid){
 				 errhint("Use the COLLATE clause to set the collation explicitly.")));
 	}
 
-    printf("rle_decompress initialize avariable cost %f ms\n",1000.0 * elapsed_time(&starttime));
-    INSTR_TIME_SET_CURRENT(starttime);
-
     int count = 0;
-	while (sp < srcend)
+	while (sp <= srcend)
 	{
-
-        // if(((*sp)&(1<<7)) == (1<<7)){ 
-        if((((*sp) >> 7)&0x1)){ 
+        if(((*sp)&(1<<7)) == (1<<7)){ 
             repeat_count = (int32)((*sp) & 0x7F)+THRESHOLD;
             sp++;
             cur_data = *sp;
@@ -289,12 +303,11 @@ rle_decompress(struct varlena *source,Oid collid){
             memcpy(dp,sp,single_count);
             dp += single_count;
             sp += single_count;
+
         }
     }
     *dp = '\0';
 
-    printf("rle_decompress while loop cost %f ms\n",1000.0 * elapsed_time(&starttime));
-    INSTR_TIME_SET_CURRENT(starttime);
 
 	/*
 	 * check we decompressed the right amount.
@@ -305,8 +318,6 @@ rle_decompress(struct varlena *source,Oid collid){
 	// 			(errmsg("wrong decompression result. dp = %d destend = %d sp = %d srcend = %d",dp,destend,sp,srcend)));
     // }
 
-
     SET_VARSIZE(result,(char *) dp - (char *) result);
-    printf("rle_decompress set result size cost %f ms\n",1000.0 * elapsed_time(&starttime));
 	return result;
 }

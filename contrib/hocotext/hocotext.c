@@ -79,6 +79,23 @@ text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * s
     }
 }
 
+text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 len,text * str,Oid collid){
+    char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
+    switch (tag){
+        case 0x00:
+            // return hocotext_common_overlay(source,offset,len,collid);
+        case 0x01:
+            return hocotext_rle_hoco_overlay(source,offset,len,str,collid);
+        case 0x02:
+            // return hocotext_tadoc_hoco_overlay(source,offset,str,collid);
+        case 0x03:
+            // return hocotext_???_hoco_overlay(source,offset,str,collid);
+        default:
+            ereport(ERROR,
+                    errmsg("Unrecognizable compresssion code: %d",tag));
+    }
+}
+
 text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid){
     char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
     switch (tag){
@@ -198,6 +215,8 @@ PG_FUNCTION_INFO_V1(hocotext_ge); // >=
 
 PG_FUNCTION_INFO_V1(hocotext_substring);
 PG_FUNCTION_INFO_V1(hocotext_insert);
+PG_FUNCTION_INFO_V1(hocotext_overlay);
+PG_FUNCTION_INFO_V1(hocotext_char_length);
 PG_FUNCTION_INFO_V1(hocotext_delete);
 
 
@@ -228,12 +247,12 @@ hocotext_compress_rle(PG_FUNCTION_ARGS){
     text *source = PG_GETARG_TEXT_PP(0);
     text *result = NULL;
 
-    instr_time	starttime;
-    INSTR_TIME_SET_CURRENT(starttime);
+    // instr_time	starttime;
+    // INSTR_TIME_SET_CURRENT(starttime);
     result = rle_compress(source,NULL,PG_GET_COLLATION());
-    double totaltime =0;
-    totaltime += elapsed_time(&starttime);
-    printf("hocotext_compress_rle compress cost %f ms\n",1000.0 * totaltime);
+    // double totaltime =0;
+    // totaltime += elapsed_time(&starttime);
+    // printf("hocotext_compress_rle compress cost %f ms\n",1000.0 * totaltime);
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
@@ -243,12 +262,22 @@ Datum
 hocotext_decompress_rle(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     text *result = NULL;
-    instr_time	starttime;
-    INSTR_TIME_SET_CURRENT(starttime);
+    // instr_time	starttime;
+
+    // printf("in outter hocotext_decompress_rle function!\n");
+    // unsigned char * dstart = source;
+    // int size = VARSIZE_ANY_EXHDR(source);
+    // unsigned char * dp = dstart + size + VARHDRSZ;
+    // while(dstart <= dp){
+    //     printChar(*dstart);
+    //     dstart++;
+    // }
+
+    // INSTR_TIME_SET_CURRENT(starttime);
     result = rle_decompress(source,PG_GET_COLLATION());
-    double totaltime =0;
-    totaltime += elapsed_time(&starttime);
-    printf("hocotext_decompress_rle decompress cost %f ms\n",1000.0 * totaltime);
+    // double totaltime =0;
+    // totaltime += elapsed_time(&starttime);
+    // printf("hocotext_decompress_rle decompress cost %f ms\n",1000.0 * totaltime);
    
    PG_FREE_IF_COPY(source,0);
 
@@ -258,11 +287,11 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
 Datum
 hocotext_compress_tadoc(PG_FUNCTION_ARGS) {
 	struct varlena *source = PG_GETARG_TEXT_PP(0);
-	instr_time starttime;
-	INSTR_TIME_SET_CURRENT(starttime);
+	// instr_time starttime;
+	// INSTR_TIME_SET_CURRENT(starttime);
 	text* result = tadoc_compress(source, PG_GET_COLLATION());
-	double totaltime = elapsed_time(&starttime);
-	printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
+	// double totaltime = elapsed_time(&starttime);
+	// printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }
@@ -270,11 +299,11 @@ hocotext_compress_tadoc(PG_FUNCTION_ARGS) {
 Datum
 hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
 	struct varlena *source = PG_GETARG_TEXT_PP(0);
-	instr_time starttime;
-	INSTR_TIME_SET_CURRENT(starttime);
+	// instr_time starttime;
+	// INSTR_TIME_SET_CURRENT(starttime);
 	text* result = tadoc_decompress(source, PG_GET_COLLATION());
-	double totaltime = elapsed_time(&starttime);
-	printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
+	// double totaltime = elapsed_time(&starttime);
+	// printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }
@@ -376,13 +405,13 @@ hocotext_substring(PG_FUNCTION_ARGS){
     int32 len = PG_GETARG_INT32(2);
     text *result = NULL;
 
-    instr_time	starttime;
-    INSTR_TIME_SET_CURRENT(starttime);
+    // instr_time	starttime;
+    // INSTR_TIME_SET_CURRENT(starttime);
     result = hocotext_hoco_extract_helper(source,offset,len,PG_GET_COLLATION());
 
-    double totaltime =0;
-    totaltime += elapsed_time(&starttime);
-    printf("hocotext_substring substring cost %f ms\n",1000.0 * totaltime);
+    // double totaltime =0;
+    // totaltime += elapsed_time(&starttime);
+    // printf("hocotext_substring substring cost %f ms\n",1000.0 * totaltime);
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
@@ -405,6 +434,34 @@ hocotext_insert(PG_FUNCTION_ARGS){
 }
 
 Datum
+hocotext_overlay(PG_FUNCTION_ARGS){
+    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    int32 offset = PG_GETARG_INT32(1);
+    int32 len = PG_GETARG_INT32(2);
+    text *str = PG_GETARG_TEXT_P(3);
+    text *result = NULL;
+
+    result = hocotext_hoco_overlay_helper(source,offset,len,str,PG_GET_COLLATION());
+
+   PG_FREE_IF_COPY(source,0);
+   PG_FREE_IF_COPY(str,3);
+
+   PG_RETURN_TEXT_P(result);
+}
+
+Datum
+hocotext_char_length(PG_FUNCTION_ARGS){
+    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    int32 result;
+
+    result = hocotext_rle_hoco_char_length(source,PG_GET_COLLATION());
+
+   PG_FREE_IF_COPY(source,0);
+
+   PG_RETURN_INT32(result);
+}
+
+Datum
 hocotext_delete(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     int32 offset = PG_GETARG_INT32(1);
@@ -412,6 +469,15 @@ hocotext_delete(PG_FUNCTION_ARGS){
     text *result = NULL;
 
     result = hocotext_hoco_delete_helper(source,offset,len,PG_GET_COLLATION());
+
+    // printf("in outter hocotext_delete function!\n");
+    // unsigned char * dstart = result;
+    // int size = VARSIZE_ANY_EXHDR(result);
+    // unsigned char * dp = dstart + size + VARHDRSZ;
+    // while(dstart <= dp){
+    //     printChar(*dstart);
+    //     dstart++;
+    // }
 
    PG_FREE_IF_COPY(source,0);
 

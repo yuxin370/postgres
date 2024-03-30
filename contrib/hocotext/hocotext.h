@@ -24,11 +24,11 @@
  * utility functions
 */
 
-#define buf_copy_ctrl(__buf,__dp) \
+#define buf_copy_ctrl(__buf,__sp) \
 do { \
-    *__buf = *__dp;                     \
+    *__buf = *__sp;                     \
     __buf ++;                           \
-    __dp ++;                            \
+    __sp ++;                            \
 }while(0)
 
 #define repeat_buf_copy(__dp,__str,__count) \
@@ -69,6 +69,8 @@ elapsed_time(instr_time *starttime)
 	INSTR_TIME_SUBTRACT(endtime, *starttime);
 	return INSTR_TIME_GET_DOUBLE(endtime);
 }
+
+
 /**
  * ************************************************************
  *                  HLEP HANDLE FUNCTIONS                     *
@@ -77,6 +79,7 @@ elapsed_time(instr_time *starttime)
 extern int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oid collid);
 extern text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * str,Oid collid);
+extern text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 len,text * str,Oid collid);
 extern text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid);
 /**
  * ************************************************************
@@ -93,6 +96,15 @@ extern text * hocotext_common_extract(struct varlena * source,int32 offset,int32
 */
 
 /**
+ * Definitions
+ */
+
+#define MAX_REPEATED_SIZE 130
+#define MAX_SINGLE_STORE_SIZE 127
+#define THRESHOLD 3
+
+
+/**
  * rle_(de)compressi()
  * internal compression module
 */
@@ -104,6 +116,7 @@ typedef struct RLE_Strategy
 } RLE_Strategy;
 extern const RLE_Strategy *const RLE_strategy_default;
 
+extern int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *dp);
 extern text * rle_compress(struct varlena *source, const RLE_Strategy *strategy, Oid collid);
 extern text * rle_decompress(struct varlena *source, Oid collid);
 
@@ -114,7 +127,6 @@ extern text * rle_decompress(struct varlena *source, Oid collid);
  */
 
 extern int32 hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right, Oid collid);
-extern int32 hocotext_rle_mixed_cmp(struct varlena * left, struct varlena * right, Oid collid);
 
 /**
  * hocotext_rle_*_*()
@@ -122,7 +134,9 @@ extern int32 hocotext_rle_mixed_cmp(struct varlena * left, struct varlena * righ
 */
 extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str,Oid collid);
+extern text * hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid);
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
+extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
 
 /**
  * TADOC Decompressed Rule Entry
