@@ -13,19 +13,14 @@
 */
 struct Symbol;
 struct Rule;
-struct DecompRule;
 union SymbolData;
 typedef struct Symbol Symbol;
 typedef struct Rule Rule;
 typedef union SymbolData SymbolData;
-typedef struct DecompRule DecompRule;
 #define MAX_WORD_LENGTH 64
 #define PRIME 9999991 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
 // #define UPBOUND 9 // the decimal number to represent the number of rules should not larger than this number 
-#define RESERVE_CHAR '^'
-typedef uint32_t rule_index_t;
-typedef uint32_t rule_offset_t;
 
 /**
  * static function declarations
@@ -83,13 +78,6 @@ struct Symbol {
     SymbolData data;
 };
 
-struct DecompRule {
-    // o means the rule have not been finish decompression step yet
-    uint8_t finished;  
-    char* decomp_start;
-    uint32_t decomp_len;
-};
-
 struct Rule {
     /** -----------------------------------------------------------------------------------------------------------------
     * Struct of Rule:
@@ -141,7 +129,7 @@ static void destroy_rule(Rule* rule) {
     num_rules--;
     // guard is the last ruyle-symbol of the correspoding rule
     destroy_symbol(rule->guard);
-    free(rule);
+    // free(rule);
 }
 
 /**
@@ -218,7 +206,7 @@ static void destroy_symbol(Symbol* symbol) {
             deuse_rule(rule);
         }
     }
-    free(symbol);
+    // free(symbol);
 }
 
 /**
@@ -444,7 +432,7 @@ static inline void init_digram_table(int32_t size) {
  * @brief clear digram table data
 */
 static inline void clear_digram_table() {
-    free(digram_table);
+    // free(digram_table);
 }
 
 /**
@@ -775,7 +763,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
 	decomp_pos += sizeof(uint32_t); // to skip `raw_size`
     num_rules = *((uint32_t*)decomp_pos);
 	decomp_pos += sizeof(uint32_t); // to skip `num_rules`
-    debug("decompressed: num_rules is %d\n", num_rules);
+    debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
     decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {
@@ -787,6 +775,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
     return decomp_rules[0].decomp_len;
 }
 
+#define MIN_BUF_SIZE 100000
 text* tadoc_compress(struct varlena *source, Oid collid) {
 	if (!OidIsValid(collid)) {
 		/*
@@ -803,8 +792,9 @@ text* tadoc_compress(struct varlena *source, Oid collid) {
 
 	char* raw_data_start = VARDATA_ANY(source);
 	uint32_t raw_data_len = VARSIZE_ANY_EXHDR(source);
-	// WARN: sometimes compressed data will be longer than origin data, be careful of it
-	text *dest = (text *)palloc(VARSIZE_ANY_EXHDR(source));
+	// WARN: sometimes compressed data will be longer than origin data, so here we alloc 2 times of origin data
+	uint32 estim_comp_len = VARSIZE_ANY_EXHDR(source) > MIN_BUF_SIZE ? VARSIZE_ANY_EXHDR(source) : MIN_BUF_SIZE * 2;
+	text *dest = (text *)palloc(estim_comp_len);
 	char* comp_data_start = VARDATA_ANY(dest);
 	uint32 comp_size = __tadoc_compress(raw_data_start, raw_data_len, comp_data_start);
 	SET_VARSIZE(dest, comp_size);

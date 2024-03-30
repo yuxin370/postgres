@@ -75,7 +75,6 @@ CREATE CAST (bpchar AS hocotext)  WITH FUNCTION hocotext(bpchar)  AS ASSIGNMENT;
 CREATE CAST (boolean AS hocotext) WITH FUNCTION hocotext(boolean) AS ASSIGNMENT;
 CREATE CAST (inet AS hocotext)    WITH FUNCTION hocotext(inet)    AS ASSIGNMENT;
 
-
 -- Operator Functions
 
 CREATE FUNCTION hocotext_eq( hocotext, hocotext )
