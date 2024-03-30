@@ -99,7 +99,7 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
                     *dp = cur_char;
                     dp++;
                     sp += (cur_index + 2) > MAX_REPEATED_SIZE ? MAX_REPEATED_SIZE : (cur_index + 2);
-                    printf("[compressing] %d %c\n",cur_index + 2,cur_char);
+                    // printf("[compressing] %d %c\n",cur_index + 2,cur_char);
                     cur_index -= MAX_REPEATED_SIZE;
                 }
             }else{
@@ -206,29 +206,32 @@ text * rle_compress(struct varlena *source,const RLE_Strategy *strategy,Oid coll
     //          * 
     //         */
     // }
-    printf("in rle_compress function! source = %s size = %d \n",sp,rawsize);
-    unsigned char * start = source;
-    int size =VARSIZE_ANY_EXHDR(source);
-    unsigned char * dd = start + size + VARHDRSZ;
-    while(start <= dd){
-        printChar(*start);
-        start++;
-    }
-    printf("\n");
+    // printf("in rle_compress function! source = %s size = %d \n",sp,rawsize);
+    // unsigned char * start = source;
+    // int size =VARSIZE_ANY_EXHDR(source);
+    // unsigned char * dd = start + size + VARHDRSZ;
+    // while(start <= dd){
+    //     printChar(*start);
+    //     start++;
+    // }
+    // printf("\n");
 
     int32 result_size = rle_compress_ctrl(sp,srcend,dp);
 
-    printf("in rle_compress function! source = %s size = %d  result = %s ,size = %d\n",sp,VARSIZE_ANY_EXHDR(source),dp + 4,result_size);
-     start = result;
-     size = 4 + result_size;
-     dd = start + size + VARHDRSZ;
-    while(start <= dd){
-        printChar(*start);
-        start++;
-    }
-    printf("\n");
+
 
     SET_VARSIZE(result,4 + result_size + VARHDRSZ);
+
+    // printf("in rle_compress function! source = %s size = %d  result = %s ,size = %d   read size = %d\n",sp,VARSIZE_ANY_EXHDR(source),dp,result_size,VARSIZE_ANY_EXHDR(result));
+    //  start = result;
+    //  size = 4 + result_size;
+    //  dd = start + size + VARHDRSZ;
+    // while(start <= dd){
+    //     printChar(*start);
+    //     start++;
+    // }
+    // printf("\n");
+
     return result;
 }
 
@@ -260,9 +263,20 @@ rle_decompress(struct varlena *source,Oid collid){
     unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
 
+    // printf("in rle_decompress function![source = %x sp = %x compressed start = %x]  compressed value = %s size = %d rawsize = %d\n",source,sp,sp + 4,sp + 4,VARSIZE_ANY_EXHDR(source));
+    // unsigned char * dstart = source;
+    // int size = VARSIZE_ANY_EXHDR(source);
+    // unsigned char * dd = dstart + size + VARHDRSZ;
+    // while(dstart <= dd){
+    //     printf("%x :",dstart);
+    //     printChar(*dstart);
+    //     dstart++;
+    // }
 
     int32 rawsize = buf_get_int(sp) & 0x3fffffff;
-    text *result = (text *)palloc(rawsize + VARHDRSZ); 
+    // printf("in rle_decompress function![source = %x compressed start = %x]  compressed value = %s size = %d rawsize = %d,compression ratio = %f\n",source,sp,sp,VARSIZE_ANY_EXHDR(source),rawsize,((rawsize - VARSIZE_ANY_EXHDR(source) )/rawsize) );
+
+    text *result = (text *)palloc(rawsize + VARHDRSZ);
     memset(result,0,sizeof(result));
 	unsigned char *dp = VARDATA_ANY(result);
 	unsigned char *destend = VARDATA_ANY(result) + rawsize;
@@ -284,7 +298,7 @@ rle_decompress(struct varlena *source,Oid collid){
 	}
 
     int count = 0;
-	while (sp <= srcend)
+	while (sp < srcend)
 	{
         if(((*sp)&(1<<7)) == (1<<7)){ 
             repeat_count = (int32)((*sp) & 0x7F)+THRESHOLD;

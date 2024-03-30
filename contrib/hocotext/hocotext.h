@@ -137,6 +137,7 @@ extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text
 extern text * hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid);
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
 extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
+extern text * hocotext_rle_hoco_concat(struct varlena * left,struct varlena * right,Oid collid);
 
 /**
  * tadoc_(de)compress()

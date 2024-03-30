@@ -217,6 +217,7 @@ PG_FUNCTION_INFO_V1(hocotext_substring);
 PG_FUNCTION_INFO_V1(hocotext_insert);
 PG_FUNCTION_INFO_V1(hocotext_overlay);
 PG_FUNCTION_INFO_V1(hocotext_char_length);
+PG_FUNCTION_INFO_V1(hocotext_concat);
 PG_FUNCTION_INFO_V1(hocotext_delete);
 
 
@@ -264,9 +265,9 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
     text *result = NULL;
     // instr_time	starttime;
 
-    // printf("in outter hocotext_decompress_rle function!\n");
     // unsigned char * dstart = source;
     // int size = VARSIZE_ANY_EXHDR(source);
+    // printf("in outter hocotext_decompress_rle function! compressed size = %d\n",size);
     // unsigned char * dp = dstart + size + VARHDRSZ;
     // while(dstart <= dp){
     //     printChar(*dstart);
@@ -450,6 +451,20 @@ hocotext_overlay(PG_FUNCTION_ARGS){
 }
 
 Datum
+hocotext_concat(PG_FUNCTION_ARGS){
+    struct varlena *left = PG_GETARG_TEXT_PP(0);
+    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    text * result;
+
+    result = hocotext_rle_hoco_concat(left,right,PG_GET_COLLATION());
+
+   PG_FREE_IF_COPY(left,0);
+   PG_FREE_IF_COPY(right,1);
+
+   PG_RETURN_TEXT_P(result);
+}
+
+Datum
 hocotext_char_length(PG_FUNCTION_ARGS){
     struct varlena *source = PG_GETARG_TEXT_PP(0);
     int32 result;
@@ -470,14 +485,6 @@ hocotext_delete(PG_FUNCTION_ARGS){
 
     result = hocotext_hoco_delete_helper(source,offset,len,PG_GET_COLLATION());
 
-    // printf("in outter hocotext_delete function!\n");
-    // unsigned char * dstart = result;
-    // int size = VARSIZE_ANY_EXHDR(result);
-    // unsigned char * dp = dstart + size + VARHDRSZ;
-    // while(dstart <= dp){
-    //     printChar(*dstart);
-    //     dstart++;
-    // }
 
    PG_FREE_IF_COPY(source,0);
 

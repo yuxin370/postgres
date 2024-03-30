@@ -128,6 +128,11 @@ RETURNS int4
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION hocotext_concat( hocotext , hocotext )
+RETURNS hocotext
+AS 'MODULE_PATHNAME'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 CREATE FUNCTION hocotext_delete( hocotext, int4 , int4 )
 RETURNS hocotext
 AS 'MODULE_PATHNAME'
@@ -215,6 +220,13 @@ CREATE OPERATOR > (
     PROCEDURE  = hocotext_gt,
     RESTRICT   = scalargtsel,
     JOIN       = scalargtjoinsel
+);
+
+CREATE OPERATOR || (
+    LEFTARG    = HOCOTEXT,
+    RIGHTARG   = HOCOTEXT,
+    COMMUTATOR = '||',
+    PROCEDURE  = hocotext_concat
 );
 
 
