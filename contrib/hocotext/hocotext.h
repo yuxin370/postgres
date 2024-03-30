@@ -125,10 +125,26 @@ extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text
 extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
 
 /**
+ * TADOC Decompressed Rule Entry
+*/
+struct DecompRule {
+    // o means the rule have not been finish decompression step yet
+    uint8_t finished;  
+    char* decomp_start;
+    uint32_t decomp_len;
+};
+typedef struct DecompRule DecompRule;
+
+/**
  * tadoc_(de)compress()
  * internal compression module
 */
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);
+
+/**
+ * tadoc to_tsvector
+*/
+
 
 #endif          /*HOCOTEXT_H*/

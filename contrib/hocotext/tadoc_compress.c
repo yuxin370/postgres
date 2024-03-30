@@ -18,7 +18,6 @@ union SymbolData;
 typedef struct Symbol Symbol;
 typedef struct Rule Rule;
 typedef union SymbolData SymbolData;
-typedef struct DecompRule DecompRule;
 #define MAX_WORD_LENGTH 64
 #define PRIME 9999991 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
@@ -83,13 +82,6 @@ struct Symbol {
     SymbolData data;
 };
 
-struct DecompRule {
-    // o means the rule have not been finish decompression step yet
-    uint8_t finished;  
-    char* decomp_start;
-    uint32_t decomp_len;
-};
-
 struct Rule {
     /** -----------------------------------------------------------------------------------------------------------------
     * Struct of Rule:
@@ -141,7 +133,7 @@ static void destroy_rule(Rule* rule) {
     num_rules--;
     // guard is the last ruyle-symbol of the correspoding rule
     destroy_symbol(rule->guard);
-    free(rule);
+    // free(rule);
 }
 
 /**
@@ -218,7 +210,7 @@ static void destroy_symbol(Symbol* symbol) {
             deuse_rule(rule);
         }
     }
-    free(symbol);
+    // free(symbol);
 }
 
 /**
@@ -444,7 +436,7 @@ static inline void init_digram_table(int32_t size) {
  * @brief clear digram table data
 */
 static inline void clear_digram_table() {
-    free(digram_table);
+    // free(digram_table);
 }
 
 /**
@@ -775,7 +767,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
 	decomp_pos += sizeof(uint32_t); // to skip `raw_size`
     num_rules = *((uint32_t*)decomp_pos);
 	decomp_pos += sizeof(uint32_t); // to skip `num_rules`
-    debug("decompressed: num_rules is %d\n", num_rules);
+    debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
     decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {

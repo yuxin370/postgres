@@ -204,10 +204,11 @@ tsvectorin(PG_FUNCTION_ARGS)
 
 	state = init_tsvector_parser(buf, 0, escontext);
 
-	arrlen = 64;
+	arrlen = 64;	// at first, arrlen is a relatively small value
 	arr = (WordEntryIN *) palloc(sizeof(WordEntryIN) * arrlen);
 	cur = tmpbuf = (char *) palloc(buflen);
 
+	
 	while (gettoken_tsvector(state, &token, &toklen, &pos, &poslen, NULL))
 	{
 		if (toklen >= MAXSTRLEN)
