@@ -797,6 +797,8 @@ text* tadoc_compress(struct varlena *source, Oid collid) {
 	text *dest = (text *)palloc(estim_comp_len);
 	char* comp_data_start = VARDATA_ANY(dest);
 	uint32 comp_size = __tadoc_compress(raw_data_start, raw_data_len, comp_data_start);
+
+	printf("raw size: %d, compressed size: %d\n", VARSIZE_ANY_EXHDR(source), comp_size);
 	SET_VARSIZE(dest, comp_size);
 	return dest;
 }

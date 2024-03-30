@@ -157,7 +157,7 @@ struct ParsedRule {
 	// the real length of this rule
 	uint32_t real_length;
 	// the base of parsed word array
-	uint32_t pos_base;
+	uint32_t txtpos_base;
 };
 
 /**
@@ -170,7 +170,7 @@ struct DecompRule {
     uint32_t decomp_len;
 };
 
-typedef ParsedRule ParsedRule;
+typedef struct ParsedRule ParsedRule;
 typedef struct DecompRule DecompRule;
 // type to indicate the id of rule
 typedef uint32_t rule_index_t;

@@ -287,11 +287,11 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
 Datum
 hocotext_compress_tadoc(PG_FUNCTION_ARGS) {
 	struct varlena *source = PG_GETARG_TEXT_PP(0);
-	// instr_time starttime;
-	// INSTR_TIME_SET_CURRENT(starttime);
+	instr_time starttime;
+	INSTR_TIME_SET_CURRENT(starttime);
 	text* result = tadoc_compress(source, PG_GET_COLLATION());
-	// double totaltime = elapsed_time(&starttime);
-	// printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
+	double totaltime = elapsed_time(&starttime);
+	printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }

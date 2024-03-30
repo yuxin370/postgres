@@ -32,7 +32,7 @@ static inline uint32_t is_letter(char ch) {
  * parse_ptr points to the parse position
  * word_len is the length of a word
 */
-char* get_word(char* source, uint16_t* word_len, char* parse_end_pos) {
+char* get_word(char* source, uint16_t* word_len, char* parse_end) {
 	char* word_end = source;
 	while (is_letter(*source)) {
 		word_end++;
@@ -41,7 +41,7 @@ char* get_word(char* source, uint16_t* word_len, char* parse_end_pos) {
 	char* cur_ptr = word_end;
 	while (1) {
 		// if read a reserve char or a new letter or the end of string, stop
-		if (*cur_ptr == RESERVE_CHAR || is_letter(*cur_ptr) || cur_ptr == parse_end_pos) {
+		if (*cur_ptr == RESERVE_CHAR || is_letter(*cur_ptr) || cur_ptr == parse_end) {
 			return cur_ptr;
 		}
 		else {
@@ -61,47 +61,50 @@ void copy_word_arr(ParsedWord* source, ParsedWord* dest, uint32_t len, uint32_t 
 /**
  * @brief parse_rule
 */
-void parse_rule(rule_index_t rule_index, uint32_t pos_base, char* rule_start, uint32_t rule_len, ParsedWord* dest) {
+void parse_rule(rule_index_t rule_index, uint32_t text_pos_base, char* txtrule_len, uint32_t txt_rule_len, ParsedWord* dest) {
 	parsed_rules[rule_index].parse_start = dest;
-	parsed_rules[rule_index].pos_base = pos_base;
-	char* parse_pos = rule_start;
-	ParsedWord* write_pos = dest;
-	char* parse_end_pos = rule_start + rule_len;
-	uint32_t global_pos = 0;	// position of each word
+	parsed_rules[rule_index].text_pos_base = text_pos_base;
+	char* cur_parse_pos = txtrule_len;
+	ParsedWord* parsed_wpos = dest;
+	char* parse_end = txtrule_len + txt_rule_len;
+	uint32_t local_text_pos = 0;	// position of each word
 	// each time parse a single word
-	while (parse_pos != parse_end_pos) {
+	// cur_parse_pos indicate the character that currently processed
+	while (cur_parse_pos != parse_end) {
 		// the character belones to a simple word
-		if (*parse_pos != RESERVE_CHAR) {
-			write_pos->alen = 0; // not a word array, so make alen=0 
-			write_pos->nvariant = 0; // no consideration to nvariant
-			write_pos->pos.pos = global_pos + pos_base;
+		if (*cur_parse_pos != RESERVE_CHAR) {
+			parsed_wpos->alen = 0; // not a word array, so make alen=0 
+			parsed_wpos->nvariant = 0; // no consideration to nvariant
+			parsed_wpos->pos.pos = local_text_pos + text_pos_base;
+			// TODO: write flag of parsed wpos
+			// parsed_wpos->flags = 
 			// get a single word
-			char* next_pos = get_word(parse_pos, &write_pos->len, parse_end_pos);
-			global_pos += (next_pos - parse_pos);
+			char* next_parse_pos = get_word(cur_parse_pos, &parsed_wpos->len, parse_end);
+			local_text_pos += (next_parse_pos - cur_parse_pos);
 		}
 		// the character represents a rule-symbol
 		else {
-			rule_index_t subrule_index = *((rule_index_t*)(parse_pos+1));
+			rule_index_t subrule_index = *((rule_index_t*)(cur_parse_pos+1));
 			// check whether the subrule has been parsed
 			if (parsed_rules[subrule_index].is_parsed) {
 				copy_word_arr(
 					parsed_rules[subrule_index].parse_start, 
 					parsed_rules[subrule_index].num_words,
-					write_pos,
-					global_pos - parsed_rules[subrule_index].pos_base
+					parsed_wpos,
+					local_text_pos + text_pos_base - parsed_rules[subrule_index].text_pos_base
 				);
-				global_pos += parsed_rules[subrule_index].real_length;
+				local_text_pos += parsed_rules[subrule_index].real_length;
 			}
 			else {
 				rule_offset_t rule_begin_offset = subrule_index==0 ? 0 : rule_end_offset[subrule_index-1];
-				char* subrule_start = rule_data_start + rule_begin_offset;
-				uint32_t subrule_len = rule_end_offset[subrule_index] - rule_begin_offset;
-				parse_rule(subrule_index, global_pos, subrule_start, subrule_len, parse_pos);
-				global_pos += parsed_rules[subrule_index].real_length;
+				char* subtxtrule_len = rule_data_start + rule_begin_offset;
+				uint32_t subtxt_rule_len = rule_end_offset[subrule_index] - rule_begin_offset;
+				parse_rule(subrule_index, local_text_pos, subtxtrule_len, subtxt_rule_len, cur_parse_pos);
+				local_text_pos += parsed_rules[subrule_index].real_length;
 			}
 		}
 	}
-	parsed_rules[rule_index].real_length = global_pos - pos_base;
+	parsed_rules[rule_index].real_length = local_text_pos - text_pos_base;
 	return;
 }
 
@@ -143,5 +146,7 @@ uint8 __tadoc_to_tsvector(char* tadoc_comp_data, TSVector* ts_vector) {
 	// initialize work
 	rule_end_offset = (rule_offset_t*)read_pos;
 	rule_data_start = read_pos + sizeof(rule_offset_t) * num_rules;
+	parse_rule(0, 0, rule_data_start, rule_end_offset[0], parsed_text.words);
+	tsvector_out = make_tsvector(&parsed_text);
+	PG_RETURN_TSVECTOR(tsvector_out);
 }
-
