@@ -18,6 +18,7 @@
 #include "access/toast_internals.h"
 #include "postgres_ext.h"
 #include "portability/instr_time.h"
+#include "tsearch/ts_utils.h"
 #include <sys/time.h>
 
 /**
@@ -147,11 +148,16 @@ extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
  * tadoc to_tsvector
 */
 struct ParsedRule {
+	// whether parsed or not
 	uint8_t is_parsed;
 	// length of the word array of this rule
 	uint32_t num_word;
 	// start position in the array
-	uint32_t arr_pos;	
+	ParsedWord* parse_start;
+	// the real length of this rule
+	uint32_t real_length;
+	// the base of parsed word array
+	uint32_t pos_base;
 };
 
 /**
@@ -165,8 +171,11 @@ struct DecompRule {
 };
 
 typedef ParsedRule ParsedRule;
-typedef bool uint8;
 typedef struct DecompRule DecompRule;
+// type to indicate the id of rule
+typedef uint32_t rule_index_t;
+typedef uint32_t rule_offset_t;
+#define RESERVE_CHAR '^'
 
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);

@@ -21,9 +21,6 @@ typedef union SymbolData SymbolData;
 #define PRIME 9999991 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
 // #define UPBOUND 9 // the decimal number to represent the number of rules should not larger than this number 
-#define RESERVE_CHAR '^'
-typedef uint32_t rule_index_t;
-typedef uint32_t rule_offset_t;
 
 /**
  * static function declarations
