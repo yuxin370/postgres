@@ -4,6 +4,6 @@ CREATE TABLE test (
 );
 
 INSERT INTO test (content)
-VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/TADOC/dataset/json.txt')));
+VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/json.txt')));
 
 DROP TABLE test;

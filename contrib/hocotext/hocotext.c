@@ -304,6 +304,7 @@ hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
 	text* result = tadoc_decompress(source, PG_GET_COLLATION());
 	// double totaltime = elapsed_time(&starttime);
 	// printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
+	// printf("origin text is %s\n", VARDATA_ANY(result));
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }

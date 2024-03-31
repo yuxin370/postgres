@@ -19,6 +19,4 @@ make -j 4
 
 make install
 
-cd ..
-
 echo 'Run Sucessful.'

@@ -180,4 +180,6 @@ typedef uint32_t rule_offset_t;
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);
 
+
+
 #endif          /*HOCOTEXT_H*/

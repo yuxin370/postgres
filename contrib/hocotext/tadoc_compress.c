@@ -765,6 +765,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
 	decomp_pos += sizeof(uint32_t); // to skip `num_rules`
     debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
+	debug("memory use of decomp_rules array is %d\n", sizeof(DecompRule) * num_rules);
     decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {
         decomp_rules[i].finished = 0;
@@ -820,8 +821,10 @@ text * tadoc_decompress(struct varlena *source, Oid collid) {
 	char* comp_data_start = VARDATA_ANY(source);
 	// uint32_t comp_size = VARSIZE_ANY_EXHDR(source);
 	uint32_t raw_size = *((uint32_t*)comp_data_start);
+	printf("decompressed raw_size is %d\n", raw_size);
 	text* dest = (text*)palloc(raw_size);
 	char* raw_data_start = VARDATA_ANY(dest);
 	__tadoc_decompress(comp_data_start, raw_data_start);
+	SET_VARSIZE(dest, raw_size);
 	return dest;
 }
