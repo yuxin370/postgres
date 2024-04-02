@@ -134,7 +134,7 @@ uniqueWORD(ParsedWord *a, int32 l)
 			 * before we should check size of position's array, max allowed
 			 * value for position and uniqueness of position
 			 */
-			pfree(ptr->word);
+			// pfree(ptr->word);
 			if (res->pos.apos[0] < MAXNUMPOS - 1 && res->pos.apos[res->pos.apos[0]] != MAXENTRYPOS - 1 &&
 				res->pos.apos[res->pos.apos[0]] != LIMITPOS(ptr->pos.pos))
 			{
@@ -207,7 +207,7 @@ make_tsvector(ParsedText *prs)
 		ptr->pos = stroff;
 		memcpy(str + stroff, prs->words[i].word, prs->words[i].len);
 		stroff += prs->words[i].len;
-		pfree(prs->words[i].word);
+		// pfree(prs->words[i].word);
 		if (prs->words[i].alen)
 		{
 			int			k = prs->words[i].pos.apos[0];
@@ -226,15 +226,15 @@ make_tsvector(ParsedText *prs)
 				WEP_SETPOS(wptr[j], prs->words[i].pos.apos[j + 1]);
 			}
 			stroff += sizeof(uint16) + k * sizeof(WordEntryPos);
-			pfree(prs->words[i].pos.apos);
+			// pfree(prs->words[i].pos.apos);
 		}
 		else
 			ptr->haspos = 0;
 		ptr++;
 	}
 
-	if (prs->words)
-		pfree(prs->words);
+	// if (prs->words)
+	// 	pfree(prs->words);
 
 	return in;
 }
@@ -548,7 +548,7 @@ pushval_morph(Datum opaque, TSQueryParserState state, char *strval, int lenval, 
 							  prs.words[count].len,
 							  weight,
 							  ((prs.words[count].flags & TSL_PREFIX) || prefix));
-					pfree(prs.words[count].word);
+					// pfree(prs.words[count].word);
 					if (cnt)
 						pushOperator(state, OP_AND, 0);
 					cnt++;
@@ -569,7 +569,7 @@ pushval_morph(Datum opaque, TSQueryParserState state, char *strval, int lenval, 
 			cntpos++;
 		}
 
-		pfree(prs.words);
+		// pfree(prs.words);
 	}
 	else
 		pushStop(state);

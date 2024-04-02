@@ -9,7 +9,8 @@ OBJS = \
 	hocotext.o \
 	hocotext_rle.o\
 	rle_compress.o\
-	tadoc_compress.o
+	tadoc_compress.o\
+	tadoc_tsvector.o\
 
 EXTENSION = hocotext
 DATA =  hocotext--1.0.sql

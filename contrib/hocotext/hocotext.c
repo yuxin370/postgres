@@ -202,6 +202,7 @@ PG_FUNCTION_INFO_V1(hocotext_compress_rle);
 PG_FUNCTION_INFO_V1(hocotext_decompress_rle); 
 PG_FUNCTION_INFO_V1(hocotext_compress_tadoc); 
 PG_FUNCTION_INFO_V1(hocotext_decompress_tadoc); 
+PG_FUNCTION_INFO_V1(hocotext_to_tsvector);
 
 /**
 * operating functions
@@ -556,4 +557,14 @@ hocotext_hash(PG_FUNCTION_ARGS){
     */
 
     PG_RETURN_INT32(0);
+}
+
+/**
+ * tadoc_to_tsvector
+*/
+Datum hocotext_to_tsvector(PG_FUNCTION_ARGS) {
+	text* comp_var = PG_GETARG_TEXT_PP(0);
+	char* comp_data = VARDATA_ANY(comp_var);
+	TSVector out = tadoc_to_tsvector(comp_data);
+	PG_RETURN_TSVECTOR(out);
 }

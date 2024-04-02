@@ -725,8 +725,9 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
 
     // to traverse the source string, each time locate a single word
     // use double-pointer window to solve the problem, Time Complexity: O(n), n is the length of the string
-    while(cur_ptr != source + slen) { // loop until read to EOF
-        // if current reading character is a letter   
+    uint32_t loop = 0;
+	while(cur_ptr != source + slen) { // loop until read to EOF
+		// if current reading character is a letter   
         if (is_letter(*cur_ptr)) {
             cur_ptr++;  // move the pointer
         }

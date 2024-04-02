@@ -151,13 +151,11 @@ struct ParsedRule {
 	// whether parsed or not
 	uint8_t is_parsed;
 	// length of the word array of this rule
-	uint32_t num_word;
+	uint32_t num_words;
 	// start position in the array
 	ParsedWord* parse_start;
 	// the real length of this rule
 	uint32_t real_length;
-	// the base of parsed word array
-	uint32_t txtpos_base;
 };
 
 /**
@@ -173,13 +171,17 @@ struct DecompRule {
 typedef struct ParsedRule ParsedRule;
 typedef struct DecompRule DecompRule;
 // type to indicate the id of rule
-typedef uint32_t rule_index_t;
+#ifdef MINI_NUM_RULES
+	typedef uint16_t rule_index_t;
+#else
+	typedef uint32_t rule_index_t;
+#endif
 typedef uint32_t rule_offset_t;
 #define RESERVE_CHAR '^'
 
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);
-
+extern TSVector tadoc_to_tsvector(char* tadoc_comp_data);
 
 
 #endif          /*HOCOTEXT_H*/
