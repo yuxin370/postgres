@@ -153,7 +153,7 @@ TSVector tadoc_to_tsvector(char* tadoc_comp_data) {
 
 	for (int i = 0; i < num_rules; ++i) {
 		parsed_rules[i].is_parsed = 0;
-	} 
+	}
 
 	ParsedText parsed_text;
 	TSVector tsvector_out;
