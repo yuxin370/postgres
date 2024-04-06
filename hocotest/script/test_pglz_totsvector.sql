@@ -9,16 +9,16 @@ DECLARE
     variance NUMERIC := 0;
     i INT;
 BEGIN
-    RAISE NOTICE 'Create table for test;';
+    -- RAISE NOTICE 'Create table for test;';
 
-    -- create a new table to test insert operation
-    CREATE TABLE test (
-        id SERIAL PRIMARY KEY,
-        content text compression pglz
-    );
+    -- -- create a new table to test insert operation
+    -- CREATE TABLE test (
+    --     id SERIAL PRIMARY KEY,
+    --     content text compression pglz
+    -- );
 
-    INSERT INTO test (content)
-    VALUES (pg_read_file('/home/yeweitang/postgres/dataset/json.txt'));
+    -- INSERT INTO test (content)
+    -- VALUES (pg_read_file('/home/yeweitang/postgres/dataset/json.txt'));
 
     -- 执行 SELECT 语句十次
     RAISE NOTICE 'PERFORM to_tsvector on pglz compressed data';

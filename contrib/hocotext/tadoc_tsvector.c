@@ -1,7 +1,7 @@
 #include "hocotext.h"
 #include "postgres.h"
 
-#define DEBUG 1
+// #define DEBUG 1
 
 #ifdef DEBUG
     #define debug(fmt, ...) fprintf(stdout, fmt, __VA_ARGS__)

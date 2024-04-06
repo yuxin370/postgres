@@ -40,14 +40,14 @@
 
 typedef struct
 {
-	uint32
+	uint64_t
 				haspos:1,
 				len:11,			/* MAX 2Kb */
-				pos:20;			/* MAX 1Mb */
+				pos:52;			/* MAX 1Mb */
 } WordEntry;
 
 #define MAXSTRLEN ( (1<<11) - 1)
-#define MAXSTRPOS ( (1<<20) - 1)
+#define MAXSTRPOS ( ((uint64_t)1<<52) - 1)
 
 extern int	compareWordEntryPos(const void *a, const void *b);
 

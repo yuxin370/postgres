@@ -13,7 +13,9 @@ make distclean
 # 调整预配置，并设置编译选项O0，不开启任何的编译优化，这是为了后面更好的看到完整的调试信息
 ./configure --prefix=/usr \
     --enable-debug \
-    CCFLAG="-g -O0" CC='gcc'
+    --enable-depend \
+    CCFLAG=-O0 \
+    CC='gcc'
 
 make -j 4
 

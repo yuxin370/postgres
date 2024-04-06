@@ -18,8 +18,9 @@ typedef struct Symbol Symbol;
 typedef struct Rule Rule;
 typedef union SymbolData SymbolData;
 #define MAX_WORD_LENGTH 64
-#define PRIME 9999991 // a magical prime number
+#define PRIME 99999989 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
+#define JUMP_NUMBER 9973
 // #define UPBOUND 9 // the decimal number to represent the number of rules should not larger than this number 
 
 /**
@@ -114,7 +115,7 @@ static DecompRule* decomp_rules;
  * will generate a symbol as its guard
 */
 static void gen_rule(Rule** new_rule) {
-    *new_rule = (Rule*)palloc(sizeof(Rule));
+    *new_rule = (Rule*)malloc(sizeof(Rule));
     num_rules++;
     (*new_rule)->count = 0;
     (*new_rule)->index = 0;  // index==0 means the rule has not been appended to rules array
@@ -150,7 +151,7 @@ static inline void deuse_rule(Rule* rule) {
  * @brief generate a rule-symbol according to an existing rule
 */
 static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
     (*new_symbol)->data.rule = rule;
     (*new_symbol)->is_rulesymbol = 1;
     (*new_symbol)->p = (*new_symbol)->n = NULL;
@@ -162,7 +163,7 @@ static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
  * @brief genrate a common symbol according to a word
 */
 static void gen_symbol(char* word, uint32_t word_len, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
     memset((*new_symbol)->data.word, '\0', MAX_WORD_LENGTH);
     strncpy((*new_symbol)->data.word, word, word_len);
     (*new_symbol)->is_rulesymbol = 0;
@@ -266,10 +267,10 @@ uint32_t cmp_symbol(Symbol* left, Symbol* right) {
         return 0;
     // both left symbol and right symbol are common symbols
     else if (left->is_rulesymbol == 0) {
-        return strcmp(left->data.word, right->data.word) == 0;
+        return memcmp(left->data.word, right->data.word, MAX_WORD_LENGTH) == 0;
     }
     // both left symbol and right symbol are rule-symbols
-    else if (left->is_rulesymbol == 1) {
+    else {
         // if they represent a same rule, then they are equal
         return left->data.rule == right->data.rule;
     }
@@ -422,7 +423,7 @@ uint32_t check_digram(Symbol* new_digram) {
  * @brief alloc memory and initialize digram table
 */
 static inline void init_digram_table(int32_t size) {
-    digram_table = (Symbol**)palloc(sizeof(Symbol*) * size);
+    digram_table = (Symbol**)malloc(sizeof(Symbol*) * size);
     for (int i = 0; i < size; ++i) {
         digram_table[i] = NULL;
     }
@@ -540,12 +541,18 @@ static inline uint32_t get_init_place(Symbol* symbol1, Symbol* symbol2) {
 
 static inline uint32_t get_jump(Symbol* symbol) {
     uint32_t one = hash(symbol);
-    return 17 - one % 17;
+    return JUMP_NUMBER - one % JUMP_NUMBER;
 }
+
 
 /**
  * @brief find a digram began with symbol
+ * this function is very very stupid
+ * WARNING: this is a single thread version
 */
+
+static uint64_t num_conflict = 0;
+
 static Symbol** find_digram(Symbol* digram) {
     Symbol* first = digram;
     Symbol* second = digram->n;
@@ -569,7 +576,8 @@ static Symbol** find_digram(Symbol* digram) {
             return &digram_table[cur_place];
         }
         cur_place = (cur_place + jump) % PRIME;
-    }
+		// num_conflict += 1;
+	}
 }
 
 /**
@@ -602,7 +610,10 @@ static void discover(Rule* rule) {
 static inline uint32_t write_rulesymbol(Symbol* rulesymbol, char* buffer) {
     Rule* rule = get_rule(rulesymbol);
     *buffer = RESERVE_CHAR;
-    memcpy(buffer+1, &rule->index, sizeof(rule_index_t));
+		
+	debug("^%d", rule->index);
+    // memcpy(buffer+1, &rule->index, sizeof(rule_index_t));
+	*((uint32_t*)(buffer + 1)) = rule->index;
     return 1 + sizeof(rule_index_t);
 }
 
@@ -610,7 +621,8 @@ static inline uint32_t write_rulesymbol(Symbol* rulesymbol, char* buffer) {
  * @brief write a common symbol to target place
 */
 static inline uint32_t write_symbol(Symbol* symbol, char* buffer) {
-    return sprintf(buffer, "%s", symbol->data.word);
+	debug("%s", symbol->data.word);
+	return sprintf(buffer, "%s", symbol->data.word);
 }
 
 /**
@@ -634,6 +646,7 @@ static uint32_t write_compressed_data(char *dest, uint32_t raw_size) {
     rule_end_offset = (rule_offset_t*)write_pos;
     write_pos = rule_data_start = write_pos + sizeof(rule_offset_t) * num_rules;
     for (int i = 0; i < num_rules; ++i) {
+		debug("rule %d: ", i);
         Rule* rule = rule_array[i];
         // if (i != 0) {
         //     rule_end_offset[i-1] = write_pos - rule_data_start;
@@ -647,7 +660,8 @@ static uint32_t write_compressed_data(char *dest, uint32_t raw_size) {
             }
         }
         rule_end_offset[i] = write_pos - rule_data_start;
-    }
+		debug("%c", '\n');    
+	}
     // rule_end_offset[num_rules-1] = write_pos - rule_data_start;
     return write_pos - dest;
 }
@@ -656,10 +670,10 @@ static uint32_t write_compressed_data(char *dest, uint32_t raw_size) {
  * @brief decompress a rule using a Depth-First-Search way
 */
 static void decompress_rule(rule_index_t index, char* rule_start, uint32_t rule_len, char* dest) {
-    decomp_rules[index].decomp_start = dest;
+	decomp_rules[index].decomp_start = dest;
     char* decomp_pos = rule_start;
     char* write_pos = dest;
-    // debug("begin to decompress rule %d\n", index);
+	// debug("begin to decompress rule %d\n", index);
     while (decomp_pos != rule_start + rule_len) {
         // the character belones to a simple word
         if (*decomp_pos != RESERVE_CHAR) {
@@ -669,24 +683,29 @@ static void decompress_rule(rule_index_t index, char* rule_start, uint32_t rule_
         }
         // the character represents a rule-symbol
         else {  
-            rule_index_t subrule_index = *((rule_index_t*)(decomp_pos+1)); // +1 is used to jump reserve type
+            rule_index_t subrule_index = *((rule_index_t*)(decomp_pos+1)); // +1 is used to jump reserve char
+			assert(subrule_index < num_rules);
+			assert(subrule_index != 0);
             // check whether the subrule has been decompressed
             if (decomp_rules[subrule_index].finished) {
-                strncpy(write_pos, decomp_rules[subrule_index].decomp_start, decomp_rules[subrule_index].decomp_len);
+				debug("when decompressing rule %d, subrule %d has been detected and its length is %d\n", index, subrule_index, decomp_rules[subrule_index].decomp_len);
+				strncpy(write_pos, decomp_rules[subrule_index].decomp_start, decomp_rules[subrule_index].decomp_len);
                 write_pos += decomp_rules[subrule_index].decomp_len;
             }
             else {
-                rule_offset_t rule_begin_offset = subrule_index==0 ? 0 : rule_end_offset[subrule_index-1];
+				debug("when decompressing rule %d, go to decompress subrule %d\n", index, subrule_index);
+                rule_offset_t rule_begin_offset = rule_end_offset[subrule_index-1];
                 char* subrule_start = rule_data_start + rule_begin_offset;
                 uint32_t subrule_len = rule_end_offset[subrule_index] - rule_begin_offset;
                 decompress_rule(subrule_index, subrule_start, subrule_len, write_pos);
                 write_pos += decomp_rules[subrule_index].decomp_len;
             }
-            decomp_pos += 1 + sizeof(rule_index_t);
+            decomp_pos += (1 + sizeof(rule_index_t));
         }
     }
     decomp_rules[index].decomp_len = write_pos - dest;
     decomp_rules[index].finished = 1;
+	debug("finish decompress rule %d and its length is %d\n", index, decomp_rules[index].decomp_len);
 }
 
 /**
@@ -725,7 +744,7 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
 
     // to traverse the source string, each time locate a single word
     // use double-pointer window to solve the problem, Time Complexity: O(n), n is the length of the string
-    uint32_t loop = 0;
+    uint64_t num_word = 0;
 	while(cur_ptr != source + slen) { // loop until read to EOF
 		// if current reading character is a letter   
         if (is_letter(*cur_ptr)) {
@@ -741,7 +760,8 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
             check_digram(last(start_rule)->p);
             // start_ptr = start_ptr==cur_ptr ? ++cur_ptr : cur_ptr;
             start_ptr = ++cur_ptr;
-        }
+			num_word++;        
+		}
         // printf("detected character id: %d, current number of rules: %d\n", num_ch, num_rules);
         // if (num_ch > 12852860) {
         //     printf("%c\n", *cur_ptr);
@@ -750,9 +770,12 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
         // num_ch++;
     }
     debug("%s\n", "finish reading input data");
-
-    // all rules are stored in memory now, print to dest
-    rule_array = (Rule**)palloc(sizeof(Rule*) * num_rules);
+	debug("number of words is %ld\n", num_word);
+	// debug("number of hash conflict is %ld\n", num_conflict);
+	// debug("%lf hash conflicts per word\n", (double)num_conflict / num_word);
+	
+	// all rules are stored in memory now, print to dest
+    rule_array = (Rule**)malloc(sizeof(Rule*) * num_rules);
     // use a depth-first-search way to discover all rules
     discover(start_rule);
     debug("num_rules: %d, num_detected_rules: %d\n", num_rules, num_detected_rules);
@@ -766,15 +789,17 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
 	decomp_pos += sizeof(uint32_t); // to skip `num_rules`
     debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
-	debug("memory use of decomp_rules array is %d\n", sizeof(DecompRule) * num_rules);
-    decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
+	debug("memory use of decomp_rules array is %ld\n", sizeof(DecompRule) * num_rules);
+    decomp_rules = (DecompRule*)malloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {
         decomp_rules[i].finished = 0;
     }
     rule_end_offset = (rule_offset_t*)decomp_pos;
     rule_data_start = decomp_pos + sizeof(rule_offset_t) * num_rules;
     decompress_rule(0, rule_data_start, rule_end_offset[0], dest);
-    return decomp_rules[0].decomp_len;
+	uint32_t rawsize = decomp_rules[0].decomp_len;
+	debug("%s", "end decompress all rules\n");
+    return rawsize;
 }
 
 #define MIN_BUF_SIZE 100000
@@ -801,7 +826,7 @@ text* tadoc_compress(struct varlena *source, Oid collid) {
 	uint32 comp_size = __tadoc_compress(raw_data_start, raw_data_len, comp_data_start);
 
 	printf("raw size: %d, compressed size: %d\n", VARSIZE_ANY_EXHDR(source), comp_size);
-	SET_VARSIZE(dest, comp_size);
+	SET_VARSIZE(dest, comp_size + VARHDRSZ);
 	return dest;
 }
 
@@ -823,9 +848,10 @@ text * tadoc_decompress(struct varlena *source, Oid collid) {
 	// uint32_t comp_size = VARSIZE_ANY_EXHDR(source);
 	uint32_t raw_size = *((uint32_t*)comp_data_start);
 	printf("decompressed raw_size is %d\n", raw_size);
-	text* dest = (text*)palloc(raw_size);
+	text* dest = (text*)palloc(raw_size + VARHDRSZ);
 	char* raw_data_start = VARDATA_ANY(dest);
-	__tadoc_decompress(comp_data_start, raw_data_start);
-	SET_VARSIZE(dest, raw_size);
+	raw_size = __tadoc_decompress(comp_data_start, raw_data_start);
+	printf("decompress return size is %d\n", raw_size);
+	SET_VARSIZE(dest, raw_size + VARHDRSZ);
 	return dest;
 }

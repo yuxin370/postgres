@@ -28,7 +28,7 @@ BEGIN
     FOR i IN 1..10 LOOP
         start_time := clock_timestamp();
 
-        SELECT hocotext_to_tsvector(content) FROM test WHERE id = 1;
+        PERFORM hocotext_to_tsvector(content) FROM test WHERE id = 1;
 
         end_time := clock_timestamp();
         elapsed_time := EXTRACT(EPOCH FROM (end_time - start_time));

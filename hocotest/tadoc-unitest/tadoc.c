@@ -408,7 +408,7 @@ uint32_t check_digram(Symbol* new_digram) {
         return 0;
     }
     Symbol** target = find_digram(new_digram);
-    if ((uint64_t)*target <= 1) { // an empty start_place or a deleted element
+    if ((uint64_t)*target <= 1) { // an empty place or a deleted element
         *target = new_digram;  // the digram has not emerged before, insert it
         return 0;
     }
@@ -736,19 +736,22 @@ static void discover(Rule* rule) {
 }
 
 /**
- * @brief write a rule-symbol to target start_place
+ * @brief write a rule-symbol to target place
 */
 static inline uint32_t write_rulesymbol(Symbol* rulesymbol, char* buffer) {
     Rule* rule = get_rule(rulesymbol);
     *buffer = RESERVE_CHAR;
-    memcpy(buffer+1, &rule->index, sizeof(rule_index_t));
+	
+	// debug("^%d", rule->index);
+    *((uint32_t*)(buffer + 1)) = rule->index;
     return 1 + sizeof(rule_index_t);
 }
 
 /**
- * @brief write a common symbol to target start_place
+ * @brief write a common symbol to target place
 */
 static inline uint32_t write_symbol(Symbol* symbol, char* buffer) {
+	// debug("%s", symbol->data.word);
     return sprintf(buffer, "%s", symbol->data.word);
 }
 
@@ -773,6 +776,7 @@ static uint32_t write_compressed_data(char *dest, uint32_t raw_size) {
     rule_end_offset = (rule_offset_t*)write_pos;
     write_pos = rule_data_start = write_pos + sizeof(rule_offset_t) * num_rules;
     for (int i = 0; i < num_rules; ++i) {
+		// debug("rule %d: ", i);
         Rule* rule = rule_array[i];
         // if (i != 0) {
         //     rule_end_offset[i-1] = write_pos - rule_data_start;
@@ -786,6 +790,7 @@ static uint32_t write_compressed_data(char *dest, uint32_t raw_size) {
             }
         }
         rule_end_offset[i] = write_pos - rule_data_start;
+		// debug("%c", '\n');
     }
     // rule_end_offset[num_rules-1] = write_pos - rule_data_start;
     return write_pos - dest;
@@ -799,22 +804,24 @@ static void decompress_rule(rule_index_t index, char* rule_start, uint32_t rule_
     char* decomp_pos = rule_start;
     char* write_pos = dest;
     // debug("begin to decompress rule %d\n", index);
-    while (decomp_pos != rule_start + rule_len) {
+	while (decomp_pos != rule_start + rule_len) {
         // the character belones to a simple word
         if (*decomp_pos != RESERVE_CHAR) {
-            *write_pos = *decomp_pos;
+			*write_pos = *decomp_pos;
             write_pos++;
             decomp_pos++;
         }
         // the character represents a rule-symbol
         else {  
             rule_index_t subrule_index = *((rule_index_t*)(decomp_pos+1)); // +1 is used to jump reserve type
-            // check whether the subrule has been decompressed
+			// check whether the subrule has been decompressed
             if (decomp_rules[subrule_index].finished) {
+				debug("when decompressing rule %d, subrule %d has been detected and its length is %d\n", index, subrule_index, decomp_rules[subrule_index].decomp_len);
                 strncpy(write_pos, decomp_rules[subrule_index].decomp_start, decomp_rules[subrule_index].decomp_len);
                 write_pos += decomp_rules[subrule_index].decomp_len;
             }
             else {
+				debug("when decompressing rule %d, go to decompress subrule %d\n", index, subrule_index);
                 rule_offset_t rule_begin_offset = subrule_index==0 ? 0 : rule_end_offset[subrule_index-1];
                 char* subrule_start = rule_data_start + rule_begin_offset;
                 uint32_t subrule_len = rule_end_offset[subrule_index] - rule_begin_offset;
@@ -826,6 +833,7 @@ static void decompress_rule(rule_index_t index, char* rule_start, uint32_t rule_
     }
     decomp_rules[index].decomp_len = write_pos - dest;
     decomp_rules[index].finished = 1;
+	debug("finish decompress rule %d and its length is %d\n", index, decomp_rules[index].decomp_len);
 }
 
 /**
@@ -845,9 +853,6 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
     // initialize global varible
     num_rules = 0;
     num_detected_rules = 0;
-
-	// initialize thread id array
-	// init_thread_id();
 
     // initialize hash table
     init_digram_table(PRIME);
@@ -920,7 +925,9 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
     rule_end_offset = (rule_offset_t*)decomp_pos;
     rule_data_start = decomp_pos + sizeof(rule_offset_t) * num_rules;
     decompress_rule(0, rule_data_start, rule_end_offset[0], dest);
-    return decomp_rules[0].decomp_len;
+	uint32_t rawsize = decomp_rules[0].decomp_len;
+	debug("%s", "end decompress all rules\n");
+    return rawsize;
 }
 
 int main() {	
@@ -929,7 +936,7 @@ int main() {
     char *src_buffer, *dest_buffer;
     long file_size;
     size_t result;
-	char file_name [100] = "../../dataset/Android";
+	char file_name [100] = "../../dataset/Horspool-tiny.txt";
 	fp = fopen(file_name, "r");
     if (fp == NULL) {
         printf("can not open file %s\n", file_name);
@@ -959,8 +966,21 @@ int main() {
 	// log the elapse time of tadoc_compress function
 	clock_t start_time, end_time;
 	start_time = clock();
-	__tadoc_compress(src_buffer, file_size, dest_buffer);
+	uint64_t comp_size = __tadoc_compress(src_buffer, file_size, dest_buffer);
 	end_time = clock();
 	double cpu_time_used = ((double) (end_time - start_time)) / CLOCKS_PER_SEC;
 	printf("tadoc_compress function execute time: %lf seconds\n", cpu_time_used);
+	printf("tadoc_compress ratio is %lf (raw_size: %ld, compressed_size: %ld)\n", (double)comp_size / file_size, file_size, comp_size);
+
+	start_time = clock();
+	uint32_t decomp_size = __tadoc_decompress(dest_buffer, src_buffer);
+	end_time = clock();
+	cpu_time_used = ((double) (end_time - start_time)) / CLOCKS_PER_SEC;
+	printf("tadoc_decompress function execute time: %lf seconds\n", cpu_time_used);
+	printf("decompress size is %d\n", decomp_size);
+
+	start_time = clock();
+	tadoc_to_tsvector(dest_buffer);
+	end_time = clock();
+	printf("tadoc_to_tsvector function execute time: %lf seconds\n", cpu_time_used);
 }

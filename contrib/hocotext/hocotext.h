@@ -20,6 +20,11 @@
 #include "portability/instr_time.h"
 #include "tsearch/ts_utils.h"
 #include <sys/time.h>
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * utility functions
