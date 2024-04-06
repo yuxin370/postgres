@@ -5092,6 +5092,12 @@ pg_column_compression(PG_FUNCTION_ARGS)
 	/* convert compression method id to compression method name */
 	switch (cmid)
 	{
+		case TOAST_RLE_COMPRESSION_ID:
+			result = "rle";
+			break;
+		case TOAST_TADOC_COMPRESSION_ID:
+			result = "tadoc";
+			break;
 		case TOAST_PGLZ_COMPRESSION_ID:
 			result = "pglz";
 			break;

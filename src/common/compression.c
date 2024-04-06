@@ -56,6 +56,11 @@ parse_compress_algorithm(char *name, pg_compress_algorithm *algorithm)
 		*algorithm = PG_COMPRESSION_LZ4;
 	else if (strcmp(name, "zstd") == 0)
 		*algorithm = PG_COMPRESSION_ZSTD;
+	/** hocotext*/
+	else if (strcmp(name, "rle") == 0)
+		*algorithm = PG_COMPRESSION_RLE;
+	else if (strcmp(name, "tadoc") == 0)
+		*algorithm = PG_COMPRESSION_TADOC;
 	else
 		return false;
 	return true;
@@ -78,6 +83,11 @@ get_compress_algorithm_name(pg_compress_algorithm algorithm)
 			return "lz4";
 		case PG_COMPRESSION_ZSTD:
 			return "zstd";
+		/** hocotext*/
+		case PG_COMPRESSION_RLE:
+			return "rle";
+		case PG_COMPRESSION_TADOC:
+			return "tadoc";
 			/* no default, to provoke compiler warnings if values are added */
 	}
 	Assert(false);
@@ -121,6 +131,9 @@ parse_compress_specification(pg_compress_algorithm algorithm, char *specificatio
 	 */
 	switch (result->algorithm)
 	{
+		/** hocotext*/
+		case PG_COMPRESSION_RLE:
+		case PG_COMPRESSION_TADOC:
 		case PG_COMPRESSION_NONE:
 			result->level = 0;
 			break;
@@ -363,6 +376,9 @@ validate_compress_specification(pg_compress_specification *spec)
 			default_level = Z_DEFAULT_COMPRESSION;
 #endif
 			break;
+		/** hocotext*/
+		case PG_COMPRESSION_RLE:
+		case PG_COMPRESSION_TADOC:
 		case PG_COMPRESSION_LZ4:
 			max_level = 12;
 			default_level = 0;	/* fast mode */

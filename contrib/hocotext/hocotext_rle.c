@@ -472,14 +472,14 @@ hocotext_rle_hoco_delete(struct varlena * source,
     int32 type = 1; // 1: repeated  0: single;
     int32 reach = 0,count = 0;
 
-    printf("in outter hocotext_rle_hoco_delete function! source = %s size = %d\n",sp + 4,VARSIZE_ANY_EXHDR(source));
-    unsigned char * start = source;
-    int size = VARSIZE_ANY_EXHDR(source);
-    unsigned char * dd = start + size + VARHDRSZ;
-    while(start <= dd){
-        printChar(*start);
-        start++;
-    }
+    // printf("in outter hocotext_rle_hoco_delete function! source = %s size = %d\n",sp + 4,VARSIZE_ANY_EXHDR(source));
+    // unsigned char * start = source;
+    // int size = VARSIZE_ANY_EXHDR(source);
+    // unsigned char * dd = start + size + VARHDRSZ;
+    // while(start <= dd){
+    //     printChar(*start);
+    //     start++;
+    // }
 
     if((--offset) < 0){
         len += offset;
@@ -797,4 +797,68 @@ hocotext_rle_hoco_char_length(struct varlena *source,Oid collid){
 	}
 
 	return rawsize;
+}
+
+text *
+hocotext_rle_hoco_concat(struct varlena *left,struct varlena *right,Oid collid){
+    unsigned char * left_sp = VARDATA_ANY(left);
+    unsigned char * right_sp = VARDATA_ANY(right);
+    int32 left_comp_size = VARSIZE_ANY_EXHDR(left) - 4;
+    int32 right_comp_size = VARSIZE_ANY_EXHDR(right) - 4;
+    int32 left_rawsize = buf_get_int(left_sp) & 0x3fffffff;
+    int32 right_rawsize = buf_get_int(right_sp) & 0x3fffffff;
+    
+
+    // printf("in hocotext_rle_hoco_concat function![source:%x  start:%x] left = %s size = %d \n",left,left_sp,left_sp,left_rawsize);
+    // unsigned char * start = left;
+    // int size =VARSIZE_ANY_EXHDR(left);
+    // unsigned char * dd = left_sp + size;
+    // while(start <= dd){
+    //     printf("%x :",start);
+    //     printChar(*start);
+    //     start++;
+    // }
+    // printf("\n");
+
+    // printf("in hocotext_rle_hoco_concat function![source:%x  start:%x] right = %s size = %d \n",right,right_sp,right_sp,right_rawsize);
+    // start = right;
+    // size =VARSIZE_ANY_EXHDR(right);
+    // dd = right_sp + size ;
+    // while(start <= dd){
+    //     printf("%x :",start);
+    //     printChar(*start);
+    //     start++;
+    // }
+    // printf("\n");
+
+
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_rle_cmp()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
+
+    text *result = (text *)palloc(4 + left_comp_size + right_comp_size + VARHDRSZ); 
+    memset(result,0,sizeof(result));    
+	unsigned char *dstart = VARDATA_ANY(result);
+    unsigned char *dp = dstart;
+    buf_put_int(dp,(left_rawsize + right_rawsize) | 0x40000000);
+
+
+
+
+    memcpy(dp,left_sp,left_comp_size);
+    dp += left_comp_size;
+    memcpy(dp,right_sp,right_comp_size);
+    dp += right_comp_size;
+    *dp = '\0';
+    SET_VARSIZE(result,dp -  dstart + VARHDRSZ);
+    return result;
 }

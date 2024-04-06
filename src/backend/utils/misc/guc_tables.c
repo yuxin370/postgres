@@ -456,6 +456,9 @@ static const struct config_enum_entry shared_memory_options[] = {
 };
 
 static const struct config_enum_entry default_toast_compression_options[] = {
+
+	{"rle", TOAST_RLE_COMPRESSION, false},
+	{"tadoc", TOAST_TADOC_COMPRESSION, false},
 	{"pglz", TOAST_PGLZ_COMPRESSION, false},
 #ifdef  USE_LZ4
 	{"lz4", TOAST_LZ4_COMPRESSION, false},

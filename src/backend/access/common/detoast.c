@@ -481,6 +481,9 @@ toast_decompress_datum(struct varlena *attr)
 	cmid = TOAST_COMPRESS_METHOD(attr);
 	switch (cmid)
 	{
+		/** hocotext*/
+		case TOAST_RLE_COMPRESSION_ID:
+		case TOAST_TADOC_COMPRESSION_ID:
 		case TOAST_PGLZ_COMPRESSION_ID:
 			return pglz_decompress_datum(attr);
 		case TOAST_LZ4_COMPRESSION_ID:
@@ -524,6 +527,9 @@ toast_decompress_datum_slice(struct varlena *attr, int32 slicelength)
 	cmid = TOAST_COMPRESS_METHOD(attr);
 	switch (cmid)
 	{
+		/** hocotext*/
+		case TOAST_RLE_COMPRESSION_ID:
+		case TOAST_TADOC_COMPRESSION_ID:
 		case TOAST_PGLZ_COMPRESSION_ID:
 			return pglz_decompress_datum_slice(attr, slicelength);
 		case TOAST_LZ4_COMPRESSION_ID:

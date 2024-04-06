@@ -24,6 +24,9 @@ typedef enum pg_compress_algorithm
 	PG_COMPRESSION_GZIP,
 	PG_COMPRESSION_LZ4,
 	PG_COMPRESSION_ZSTD,
+	/** hocotext*/
+	PG_COMPRESSION_RLE,
+	PG_COMPRESSION_TADOC
 } pg_compress_algorithm;
 
 #define PG_COMPRESSION_OPTION_WORKERS		(1 << 0)
