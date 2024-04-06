@@ -55,11 +55,16 @@ static char* get_word(char* source, uint16_t* word_len, char* parse_end) {
 }
 
 static void copy_word_arr(ParsedWord* source, ParsedWord* dest, uint32_t len, uint32_t start_text_pos) {
+	dest[0].len = source[0].len;
+	dest[0].word = source[0].word;
+	dest[0].pos.pos = start_text_pos;
+	uint32_t cur_text_pos = start_text_pos;
 	// memcpy(dest, source, sizeof(ParsedWord) * len);
-	for (int i = 0; i < len; ++i) {
+	for (int i = 1; i < len; ++i) {
 		dest[i].len = source[i].len;
 		dest[i].word = source[i].word;
-		dest[i].pos.pos = start_text_pos + i;
+		dest[i].pos.pos = cur_text_pos;
+		cur_text_pos += dest[i-1].len;
 	}
 }
 
@@ -128,7 +133,7 @@ static void parse_rule(rule_index_t rule_index, uint32_t start_text_pos, char* r
 			}
 			else {
 				debug("when parsing rule %u, find unparsed rule %u\n", rule_index, subrule_index);
-				rule_offset_t rule_begin_offset = subrule_index==0 ? 0 : rule_end_offset[subrule_index-1];
+				rule_offset_t rule_begin_offset = rule_end_offset[subrule_index-1];
 				char* subrule_data = rule_data_start + rule_begin_offset;
 				uint32_t subrule_len = rule_end_offset[subrule_index] - rule_begin_offset;
 				parse_rule(subrule_index, cur_text_pos, subrule_data, subrule_len, parsed_wpos);
@@ -200,9 +205,9 @@ void tadoc_to_tsvector(char* tadoc_comp_data) {
 	// parsed_text.pos is the position of current processing word
 	parsed_text.pos = parsed_rules[0].real_length;
 	
-	// for (int i = 0; i < parsed_text.curwords; ++i) {
-	// 	print_word(parsed_text.words[i]);
-	// }
+	for (int i = 0; i < parsed_text.curwords; ++i) {
+		print_word(parsed_text.words[i]);
+	}
 
 	debug("%s", "end make_tsvector\n");
 }

@@ -7,8 +7,10 @@ DECLARE
     total_time NUMERIC := 0;
     average_time NUMERIC;
     variance NUMERIC := 0;
+    data_path TEXT;
     i INT;
 BEGIN
+
     -- create a new table to test insert operation
     CREATE TABLE test (
         id SERIAL PRIMARY KEY,
@@ -23,7 +25,7 @@ BEGIN
         -- PERFORM char_length(c1) from baseline;
         -- test tadoc_compress 
         INSERT INTO test (content)
-        VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Android')));
+        VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Horspool-medium.txt')));
 
         end_time := clock_timestamp();
         elapsed_time := EXTRACT(EPOCH FROM (end_time - start_time));

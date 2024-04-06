@@ -67,7 +67,7 @@ typedef struct ParsedRule ParsedRule;
 typedef struct DecompRule DecompRule;
 // type to indicate the id of rule
 #ifdef MINI_NUM_RULES
-	typedef uint16_t_t rule_index_t;
+	typedef uint16_t rule_index_t;
 #else
 	typedef uint32_t rule_index_t;
 #endif

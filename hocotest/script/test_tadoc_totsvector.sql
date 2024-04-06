@@ -21,7 +21,7 @@ BEGIN
     -- PERFORM char_length(c1) from baseline;
     -- test tadoc_compress 
     INSERT INTO test (content)
-    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Android')));
+    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Android-medium.txt')));
 
     -- 执行 SELECT 语句十次
     RAISE NOTICE '';

@@ -10,10 +10,10 @@ CREATE TABLE test (
     );
 
 INSERT INTO test (content)
-    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Horspool-tiny.txt')));
+    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/json.txt')));
 
 SELECT pg_backend_pid();
 
 -- SELECT pg_backend_pid();
 
-SELECT hocotext_decompress_tadoc(content) FROM test WHERE id = 1;
+SELECT hocotext_to_tsvector(content) FROM test WHERE id = 1;

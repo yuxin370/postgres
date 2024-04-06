@@ -17,7 +17,7 @@ BEGIN
 
     -- insert first to preparing for decompression
     INSERT INTO test (content)
-    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Android')));
+    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Horspool-medium.txt')));
 
     -- 执行 SELECT 语句十次
     RAISE NOTICE 'PERFORM char_length(c1) from baseline;';
@@ -26,7 +26,7 @@ BEGIN
     
         -- PERFORM char_length(c1) from baseline;
         -- test tadoc_decompress
-        SELECT tadoc_decompress(content) FROM test WHERE id = 1;
+        PERFORM hocotext_decompress_tadoc(content) FROM test WHERE id = 1;
 
         end_time := clock_timestamp();
         elapsed_time := EXTRACT(EPOCH FROM (end_time - start_time));
