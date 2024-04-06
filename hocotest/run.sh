@@ -1,0 +1,1 @@
+psql -U yeweitang -d test -f test_pglz_compress_time.sql

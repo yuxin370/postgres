@@ -1,4 +1,4 @@
-#include "hocotext.h"
+#include "tadoc.h"
 
 #define DEBUG 1
 
@@ -18,8 +18,9 @@ typedef struct Symbol Symbol;
 typedef struct Rule Rule;
 typedef union SymbolData SymbolData;
 #define MAX_WORD_LENGTH 64
-#define PRIME 9999991 // a magical prime number
+#define PRIME 99999989 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
+#define JUMP_NUMBER 9973
 // #define UPBOUND 9 // the decimal number to represent the number of rules should not larger than this number 
 
 /**
@@ -105,6 +106,11 @@ static rule_offset_t* rule_end_offset;
 static char* rule_data_start;
 static DecompRule* decomp_rules;
 
+/**
+ * multi-thread definitions
+*/
+
+
 /** -------------------------------------------------------------------------------
  * RULE FUNCTIONS
 */
@@ -114,7 +120,7 @@ static DecompRule* decomp_rules;
  * will generate a symbol as its guard
 */
 static void gen_rule(Rule** new_rule) {
-    *new_rule = (Rule*)palloc(sizeof(Rule));
+    *new_rule = (Rule*)malloc(sizeof(Rule));
     num_rules++;
     (*new_rule)->count = 0;
     (*new_rule)->index = 0;  // index==0 means the rule has not been appended to rules array
@@ -150,7 +156,7 @@ static inline void deuse_rule(Rule* rule) {
  * @brief generate a rule-symbol according to an existing rule
 */
 static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
     (*new_symbol)->data.rule = rule;
     (*new_symbol)->is_rulesymbol = 1;
     (*new_symbol)->p = (*new_symbol)->n = NULL;
@@ -162,7 +168,7 @@ static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
  * @brief genrate a common symbol according to a word
 */
 static void gen_symbol(char* word, uint32_t word_len, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
     memset((*new_symbol)->data.word, '\0', MAX_WORD_LENGTH);
     strncpy((*new_symbol)->data.word, word, word_len);
     (*new_symbol)->is_rulesymbol = 0;
@@ -266,10 +272,10 @@ uint32_t cmp_symbol(Symbol* left, Symbol* right) {
         return 0;
     // both left symbol and right symbol are common symbols
     else if (left->is_rulesymbol == 0) {
-        return strcmp(left->data.word, right->data.word) == 0;
+        return memcmp(left->data.word, right->data.word, MAX_WORD_LENGTH) == 0;
     }
     // both left symbol and right symbol are rule-symbols
-    else if (left->is_rulesymbol == 1) {
+    else {
         // if they represent a same rule, then they are equal
         return left->data.rule == right->data.rule;
     }
@@ -402,7 +408,7 @@ uint32_t check_digram(Symbol* new_digram) {
         return 0;
     }
     Symbol** target = find_digram(new_digram);
-    if ((uint64_t)*target <= 1) { // an empty place or a deleted element
+    if ((uint64_t)*target <= 1) { // an empty start_place or a deleted element
         *target = new_digram;  // the digram has not emerged before, insert it
         return 0;
     }
@@ -422,7 +428,7 @@ uint32_t check_digram(Symbol* new_digram) {
  * @brief alloc memory and initialize digram table
 */
 static inline void init_digram_table(int32_t size) {
-    digram_table = (Symbol**)palloc(sizeof(Symbol*) * size);
+    digram_table = (Symbol**)malloc(sizeof(Symbol*) * size);
     for (int i = 0; i < size; ++i) {
         digram_table[i] = NULL;
     }
@@ -540,12 +546,18 @@ static inline uint32_t get_init_place(Symbol* symbol1, Symbol* symbol2) {
 
 static inline uint32_t get_jump(Symbol* symbol) {
     uint32_t one = hash(symbol);
-    return 17 - one % 17;
+    return JUMP_NUMBER - one % JUMP_NUMBER;
 }
+
 
 /**
  * @brief find a digram began with symbol
+ * this function is very very stupid
+ * WARNING: this is a single thread version
 */
+
+static uint64_t num_conflict = 0;
+
 static Symbol** find_digram(Symbol* digram) {
     Symbol* first = digram;
     Symbol* second = digram->n;
@@ -569,8 +581,135 @@ static Symbol** find_digram(Symbol* digram) {
             return &digram_table[cur_place];
         }
         cur_place = (cur_place + jump) % PRIME;
+        // num_conflict += 1;
     }
 }
+
+// the version leverage data localization
+// static Symbol** find_digram(Symbol* digram) {
+//     Symbol* first = digram;
+//     Symbol* second = digram->n;
+//     uint32_t cur_place = get_init_place(first, second);
+//     uint32_t jump = 1;
+//     uint32_t target_place = -1;
+//     while (1) {
+//         Symbol *m = digram_table[cur_place];
+//         // not happen hash coincidence / can't find anything
+//         if (!m) {
+//             if (target_place == -1) {
+//                 target_place = cur_place;
+//             }
+//             return &digram_table[target_place];
+//         }
+//         // if the digram here has been deleted
+//         else if ((uint64_t)m == 1) {
+//             target_place = cur_place;
+//         }
+//         else if (cmp_symbol(m, first) && cmp_symbol(m->n, second)) {
+//             return &digram_table[cur_place];
+//         }
+//         cur_place = (cur_place + jump) % PRIME;
+//     }
+// }
+
+// #define NO_MATCH_FLAG 0
+// #define DELETE_FLAG 1
+// #define EMPTY_FLAG 2
+// #define MATCH_FLAG 3
+
+// #define NUM_THREAD 4
+// #define LOOP_UNROLL_SIZE 1  // the size of loop unrolling
+
+// /**
+//  * thread varibles
+// */
+// static uint8_t flags [LOOP_UNROLL_SIZE * NUM_THREAD];
+// static uint64_t thread_id [NUM_THREAD];
+// static pthread_t handler [NUM_THREAD];
+
+// static uint32_t start_place;
+// static uint32_t jump;
+// static uint32_t jump_times;
+// static Symbol* digram_first;
+// static Symbol* digram_second;
+
+// static inline void init_thread_id() {
+// 	for (int i = 0; i < NUM_THREAD; ++i) {
+// 		thread_id[i] = i;	// 0, 1, 2, 3...
+// 	}
+// }
+
+// /**
+//  * thread function
+// */
+// static void* thread_func(void* _arg) {
+// 	uint64_t tid = (uint64_t)_arg;
+// 	for (int i = 0; i < LOOP_UNROLL_SIZE; ++i) {
+// 		uint32_t offset = i * NUM_THREAD + tid;
+// 		uint32_t probe_place = (start_place + jump * offset) % PRIME;
+// 		Symbol *m = digram_table[probe_place];
+// 		// empty
+// 		if (!m) {
+// 			flags[offset] = EMPTY_FLAG;
+//             return NULL;
+// 		}
+// 		// deleted
+// 		else if ((uint64_t)m == 1) {
+// 			flags[offset] = DELETE_FLAG;
+// 		}
+// 		// match
+// 		else if (cmp_symbol(m, digram_first) && cmp_symbol(m->n, digram_second)) {
+// 			flags[offset] = MATCH_FLAG;
+//             return NULL;
+//         }
+// 		// not match, do nothing
+// 	}
+// }
+
+// /**
+//  * @brief multithread version of find_digram
+// */
+// static Symbol** find_digram(Symbol* digram) {
+// 	digram_first = digram;
+// 	digram_second = digram->n;
+//     start_place = get_init_place(digram_first, digram_second);
+//     jump = get_jump(digram_first);
+//     uint32_t target_place = -1;
+// 	uint32_t round = 0;
+//     while (1) {
+//         for (int i = 0; i < NUM_THREAD; ++i) {
+//             pthread_create(&(handler[i]), NULL, thread_func, (void*)thread_id[i]);
+//         }
+//         for (int i = 0; i < NUM_THREAD; ++i) {
+//             pthread_join(handler[i], NULL);
+//         }
+//         for (int i = 0; i < NUM_THREAD * LOOP_UNROLL_SIZE; ++i) {
+// 			// debug("flags[%d] is %d\n", i, flags[i]);
+// 			// empty place
+// 			if (flags[i] == EMPTY_FLAG) {
+//                 if (target_place == -1) {
+// 					target_place = start_place + i * jump;
+// 				}
+// 				return &digram_table[target_place];
+//             }
+// 			// deleted place
+//             else if (flags[i] == DELETE_FLAG) {
+//                 target_place = start_place + i * jump;
+//             }
+// 			// matched place
+//             else if (flags[i] == MATCH_FLAG) {
+// 				target_place = start_place + i * jump;
+// 				return &digram_table[target_place];
+// 			}
+// 			// no match, do nothing
+//         }
+// 		// update new start place, continue searching
+//         start_place = start_place + jump * (NUM_THREAD * LOOP_UNROLL_SIZE);
+// 		round++;
+// 	}
+// }
+
+
 
 /**
  * @brief Depth First Search algorithm based discover function
@@ -597,7 +736,7 @@ static void discover(Rule* rule) {
 }
 
 /**
- * @brief write a rule-symbol to target place
+ * @brief write a rule-symbol to target start_place
 */
 static inline uint32_t write_rulesymbol(Symbol* rulesymbol, char* buffer) {
     Rule* rule = get_rule(rulesymbol);
@@ -607,7 +746,7 @@ static inline uint32_t write_rulesymbol(Symbol* rulesymbol, char* buffer) {
 }
 
 /**
- * @brief write a common symbol to target place
+ * @brief write a common symbol to target start_place
 */
 static inline uint32_t write_symbol(Symbol* symbol, char* buffer) {
     return sprintf(buffer, "%s", symbol->data.word);
@@ -707,6 +846,9 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
     num_rules = 0;
     num_detected_rules = 0;
 
+	// initialize thread id array
+	// init_thread_id();
+
     // initialize hash table
     init_digram_table(PRIME);
     // the start of a word
@@ -725,7 +867,7 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
 
     // to traverse the source string, each time locate a single word
     // use double-pointer window to solve the problem, Time Complexity: O(n), n is the length of the string
-    uint32_t loop = 0;
+    uint64_t num_word = 0;
 	while(cur_ptr != source + slen) { // loop until read to EOF
 		// if current reading character is a letter   
         if (is_letter(*cur_ptr)) {
@@ -741,6 +883,7 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
             check_digram(last(start_rule)->p);
             // start_ptr = start_ptr==cur_ptr ? ++cur_ptr : cur_ptr;
             start_ptr = ++cur_ptr;
+			num_word++;
         }
         // printf("detected character id: %d, current number of rules: %d\n", num_ch, num_rules);
         // if (num_ch > 12852860) {
@@ -750,9 +893,12 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
         // num_ch++;
     }
     debug("%s\n", "finish reading input data");
+    debug("number of words is %ld\n", num_word);
+	// debug("number of hash conflict is %ld\n", num_conflict);
+	// debug("%lf hash conflicts per word\n", (double)num_conflict / num_word);
 
     // all rules are stored in memory now, print to dest
-    rule_array = (Rule**)palloc(sizeof(Rule*) * num_rules);
+    rule_array = (Rule**)malloc(sizeof(Rule*) * num_rules);
     // use a depth-first-search way to discover all rules
     discover(start_rule);
     debug("num_rules: %d, num_detected_rules: %d\n", num_rules, num_detected_rules);
@@ -766,8 +912,8 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
 	decomp_pos += sizeof(uint32_t); // to skip `num_rules`
     debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
-	debug("memory use of decomp_rules array is %d\n", sizeof(DecompRule) * num_rules);
-    decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
+	debug("memory use of decomp_rules array is %ld\n", sizeof(DecompRule) * num_rules);
+    decomp_rules = (DecompRule*)malloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {
         decomp_rules[i].finished = 0;
     }
@@ -777,55 +923,44 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
     return decomp_rules[0].decomp_len;
 }
 
-#define MIN_BUF_SIZE 100000
-text* tadoc_compress(struct varlena *source, Oid collid) {
-	if (!OidIsValid(collid)) {
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR, (
-				errcode(ERRCODE_INDETERMINATE_COLLATION),
-				errmsg("could not determine which collation to use for %s function", "tadoc_compess()"),
-				errhint("Use the COLLATE clause to set the collation explicitly.")
-			)
-		);
-	}
+int main() {	
+	printf("test tadoc compression operation ---\n");
+	FILE *fp;
+    char *src_buffer, *dest_buffer;
+    long file_size;
+    size_t result;
+	char file_name [100] = "../../dataset/Android";
+	fp = fopen(file_name, "r");
+    if (fp == NULL) {
+        printf("can not open file %s\n", file_name);
+        return 1;
+    }
+	fseek(fp, 0, SEEK_END);
+	file_size = ftell(fp);
+	rewind(fp);
+	src_buffer = (char *)malloc(file_size + 1);
+	dest_buffer = (char *)malloc(file_size + 1);
+	if (src_buffer == NULL) {
+        printf("fail to alloc memory\n");
+        free(src_buffer);
+		free(dest_buffer);
+		fclose(fp);
+        return 1;
+    }
+	result = fread(src_buffer, 1, file_size, fp);
+	if (result != file_size) {
+        printf("fail to read file\n");
+		free(src_buffer);
+		free(dest_buffer);
+        fclose(fp);
+        return 1;
+    }
 
-	char* raw_data_start = VARDATA_ANY(source);
-	uint32_t raw_data_len = VARSIZE_ANY_EXHDR(source);
-	// WARN: sometimes compressed data will be longer than origin data, so here we alloc 2 times of origin data
-	uint32 estim_comp_len = VARSIZE_ANY_EXHDR(source) > MIN_BUF_SIZE ? VARSIZE_ANY_EXHDR(source) : MIN_BUF_SIZE * 2;
-	text *dest = (text *)palloc(estim_comp_len);
-	char* comp_data_start = VARDATA_ANY(dest);
-	uint32 comp_size = __tadoc_compress(raw_data_start, raw_data_len, comp_data_start);
-
-	printf("raw size: %d, compressed size: %d\n", VARSIZE_ANY_EXHDR(source), comp_size);
-	SET_VARSIZE(dest, comp_size);
-	return dest;
-}
-
-text * tadoc_decompress(struct varlena *source, Oid collid) {
-	if (!OidIsValid(collid)) {
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR, (
-				errcode(ERRCODE_INDETERMINATE_COLLATION),
-				errmsg("could not determine which collation to use for %s function", "tadoc_decompress()"),
-				errhint("Use the COLLATE clause to set the collation explicitly.")
-			)
-		);
-	}
-
-	char* comp_data_start = VARDATA_ANY(source);
-	// uint32_t comp_size = VARSIZE_ANY_EXHDR(source);
-	uint32_t raw_size = *((uint32_t*)comp_data_start);
-	printf("decompressed raw_size is %d\n", raw_size);
-	text* dest = (text*)palloc(raw_size);
-	char* raw_data_start = VARDATA_ANY(dest);
-	__tadoc_decompress(comp_data_start, raw_data_start);
-	SET_VARSIZE(dest, raw_size);
-	return dest;
+	// log the elapse time of tadoc_compress function
+	clock_t start_time, end_time;
+	start_time = clock();
+	__tadoc_compress(src_buffer, file_size, dest_buffer);
+	end_time = clock();
+	double cpu_time_used = ((double) (end_time - start_time)) / CLOCKS_PER_SEC;
+	printf("tadoc_compress function execute time: %lf seconds\n", cpu_time_used);
 }

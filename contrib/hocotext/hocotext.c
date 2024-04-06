@@ -202,6 +202,7 @@ PG_FUNCTION_INFO_V1(hocotext_compress_rle);
 PG_FUNCTION_INFO_V1(hocotext_decompress_rle); 
 PG_FUNCTION_INFO_V1(hocotext_compress_tadoc); 
 PG_FUNCTION_INFO_V1(hocotext_decompress_tadoc); 
+PG_FUNCTION_INFO_V1(hocotext_to_tsvector);
 
 /**
 * operating functions
@@ -288,11 +289,11 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
 Datum
 hocotext_compress_tadoc(PG_FUNCTION_ARGS) {
 	struct varlena *source = PG_GETARG_TEXT_PP(0);
-	// instr_time starttime;
-	// INSTR_TIME_SET_CURRENT(starttime);
+	instr_time starttime;
+	INSTR_TIME_SET_CURRENT(starttime);
 	text* result = tadoc_compress(source, PG_GET_COLLATION());
-	// double totaltime = elapsed_time(&starttime);
-	// printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
+	double totaltime = elapsed_time(&starttime);
+	printf("hocotext_compress_tadoc compress cost %f ms\n",1000.0 * totaltime);
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }
@@ -305,6 +306,7 @@ hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
 	text* result = tadoc_decompress(source, PG_GET_COLLATION());
 	// double totaltime = elapsed_time(&starttime);
 	// printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
+	// printf("origin text is %s\n", VARDATA_ANY(result));
 	PG_FREE_IF_COPY(source,0);
 	PG_RETURN_TEXT_P(result);
 }
@@ -562,4 +564,14 @@ hocotext_hash(PG_FUNCTION_ARGS){
     */
 
     PG_RETURN_INT32(0);
+}
+
+/**
+ * tadoc_to_tsvector
+*/
+Datum hocotext_to_tsvector(PG_FUNCTION_ARGS) {
+	text* comp_var = PG_GETARG_TEXT_PP(0);
+	char* comp_data = VARDATA_ANY(comp_var);
+	TSVector out = tadoc_to_tsvector(comp_data);
+	PG_RETURN_TSVECTOR(out);
 }

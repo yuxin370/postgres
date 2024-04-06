@@ -1,7 +1,7 @@
 # contrib/hocotext/Makefile
 
 CC = gcc
-CFLAGS = -std=c11 -g -O0
+CFLAGS = -std=c11 -g -O0 --enable-debug
 
 MODULE_big = hocotext
 OBJS = \
@@ -9,7 +9,8 @@ OBJS = \
 	hocotext.o \
 	hocotext_rle.o\
 	rle_compress.o\
-	tadoc_compress.o
+	tadoc_compress.o\
+	tadoc_tsvector.o\
 
 EXTENSION = hocotext
 DATA =  hocotext--1.0.sql

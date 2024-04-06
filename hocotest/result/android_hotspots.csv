@@ -1,0 +1,17 @@
+Function	CPU Time	CPU Time:Effective Time	CPU Time:Spin Time	CPU Time:Overhead Time	Module	Function (Full)	Source File	Start Address
+find_digram	20.286643	20.286643	0.0	0.0	tadoc	find_digram	[Unknown]	0x1950
+__GI___libc_malloc	6.710344	6.710344	0.0	0.0	libc.so.6	__GI___libc_malloc	malloc.c	0xa50a0
+check_digram.part.0	1.384270	1.384270	0.0	0.0	tadoc	check_digram.part.0	[Unknown]	0x2570
+murmurhash	1.067994	1.067994	0.0	0.0	tadoc	murmurhash	[Unknown]	0x1880
+main	0.936011	0.936011	0.0	0.0	tadoc	main	[Unknown]	0x1260
+destroy_symbol	0.803983	0.803983	0.0	0.0	tadoc	destroy_symbol	[Unknown]	0x2040
+discover	0.631979	0.631979	0.0	0.0	tadoc	discover	[Unknown]	0x17f0
+join_symbols	0.611931	0.611931	0.0	0.0	tadoc	join_symbols	[Unknown]	0x1cb0
+replace_digram.isra.0	0.303909	0.303909	0.0	0.0	tadoc	replace_digram.isra.0	[Unknown]	0x2480
+__strncpy_evex	0.212010	0.212010	0.0	0.0	libc.so.6	__strncpy_evex	strcpy-evex.S	0x1b32b0
+__strlen_evex	0.175986	0.175986	0.0	0.0	libc.so.6	__strlen_evex	strlen-evex.S	0x1b20a0
+__strncpy_chk	0.024004	0.024004	0.0	0.0	libc.so.6	__strncpy_chk	strncpy_chk.c	0x134940
+func@0x1194	0.020001	0.020001	0.0	0.0	tadoc	func@0x1194	[Unknown]	0x1194
+__GI__IO_fread	0.015674	0.015674	0.0	0.0	libc.so.6	__GI__IO_fread	iofread.c	0x2910f
+func@0x11a4	0.012001	0.012001	0.0	0.0	tadoc	func@0x11a4	[Unknown]	0x11a4
+func@0x1210	0.011996	0.011996	0.0	0.0	tadoc	func@0x1210	[Unknown]	0x1210
