@@ -107,54 +107,54 @@ RETURNS bool
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_substring( hocotext, int4 , int4 )
+CREATE OR REPLACE FUNCTION "substring"( hocotext, int4 , int4 )
 RETURNS text
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_substring'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_insert( hocotext, int4 , text )
+CREATE FUNCTION "insert"( hocotext, int4 , text )
 RETURNS hocotext
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_insert'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_overlay( hocotext, int4 , int4, text )
+CREATE FUNCTION "overlay"( hocotext, int4 , int4, text )
 RETURNS hocotext
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_overlay'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_char_length( hocotext )
+CREATE FUNCTION "char_length"( hocotext )
 RETURNS int4
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_char_length'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_concat( hocotext , hocotext )
+CREATE FUNCTION "concat"( hocotext , hocotext )
 RETURNS hocotext
-AS 'MODULE_PATHNAME'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+AS 'MODULE_PATHNAME','hocotext_concat'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
 
-CREATE FUNCTION hocotext_delete( hocotext, int4 , int4 )
+CREATE FUNCTION "delete"( hocotext, int4 , int4 )
 RETURNS hocotext
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_delete'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_compress_rle( text )
+CREATE FUNCTION "hoco_rle"( text )
 RETURNS text
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_compress_rle'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_decompress_rle( hocotext )
+CREATE FUNCTION "hoco_de_rle"( hocotext )
 RETURNS text
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_decompress_rle'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_compress_tadoc( text )
+CREATE FUNCTION "hoco_tadoc"( text )
 RETURNS text
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_compress_tadoc'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_decompress_tadoc( hocotext )
+CREATE FUNCTION "hoco_de_tadoc"( hocotext )
 RETURNS text
-AS 'MODULE_PATHNAME'
+AS 'MODULE_PATHNAME','hocotext_decompress_tadoc'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Operators
@@ -225,7 +225,7 @@ CREATE OPERATOR || (
     LEFTARG    = HOCOTEXT,
     RIGHTARG   = HOCOTEXT,
     COMMUTATOR = '||',
-    PROCEDURE  = hocotext_concat
+    PROCEDURE  = concat
 );
 
 

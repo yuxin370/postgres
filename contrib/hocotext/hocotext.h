@@ -148,7 +148,7 @@ extern text * hocotext_rle_hoco_concat(struct varlena * left,struct varlena * ri
 /**
  * tadoc to_tsvector
 */
-struct ParsedRule {
+typedef struct ParsedRule {
 	// whether parsed or not
 	uint8_t is_parsed;
 	// length of the word array of this rule
@@ -159,7 +159,7 @@ struct ParsedRule {
 	uint32_t real_length;
 	// the base of parsed word array
 	uint32_t pos_base;
-};
+}ParsedRule;
 
 /**
  * TADOC Decompressed Rule Entry
@@ -171,7 +171,7 @@ struct DecompRule {
     uint32_t decomp_len;
 };
 
-typedef ParsedRule ParsedRule;
+// typedef ParsedRule ParsedRule;
 typedef struct DecompRule DecompRule;
 // type to indicate the id of rule
 typedef uint32_t rule_index_t;

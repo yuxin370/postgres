@@ -284,7 +284,8 @@ toast_get_compression_id(struct varlena *attr)
 char
 CompressionNameToMethod(const char *compression)
 {
-	if (strcmp(compression, "pglz") == 0)
+	/** hocotext */
+	if (strcmp(compression, "pglz") == 0 || strcmp(compression, "rle") == 0 || strcmp(compression, "tadoc") == 0)
 		return TOAST_PGLZ_COMPRESSION;
 	else if (strcmp(compression, "lz4") == 0)
 	{
@@ -305,6 +306,9 @@ GetCompressionMethodName(char method)
 {
 	switch (method)
 	{
+		/** hocotext */
+		case TOAST_RLE_COMPRESSION:
+		case TOAST_TADOC_COMPRESSION:
 		case TOAST_PGLZ_COMPRESSION:
 			return "pglz";
 		case TOAST_LZ4_COMPRESSION:

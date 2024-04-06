@@ -1696,6 +1696,9 @@ check_tuple_attribute(HeapCheckContext *ctx)
 				/* List of all valid compression method IDs */
 			case TOAST_PGLZ_COMPRESSION_ID:
 			case TOAST_LZ4_COMPRESSION_ID:
+			/** hocotext*/
+			case TOAST_RLE_COMPRESSION_ID:
+			case TOAST_TADOC_COMPRESSION_ID:
 				valid = true;
 				break;
 

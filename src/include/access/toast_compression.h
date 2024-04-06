@@ -39,6 +39,9 @@ typedef enum ToastCompressionId
 	TOAST_PGLZ_COMPRESSION_ID = 0,
 	TOAST_LZ4_COMPRESSION_ID = 1,
 	TOAST_INVALID_COMPRESSION_ID = 2,
+	/** hocotext*/
+	TOAST_RLE_COMPRESSION_ID = 3,
+	TOAST_TADOC_COMPRESSION_ID = 4,
 } ToastCompressionId;
 
 /*
@@ -48,6 +51,9 @@ typedef enum ToastCompressionId
  */
 #define TOAST_PGLZ_COMPRESSION			'p'
 #define TOAST_LZ4_COMPRESSION			'l'
+/** hocotext*/
+#define TOAST_RLE_COMPRESSION			'r'
+#define TOAST_TADOC_COMPRESSION			't'
 #define InvalidCompressionMethod		'\0'
 
 #define CompressionMethodIsValid(cm)  ((cm) != InvalidCompressionMethod)

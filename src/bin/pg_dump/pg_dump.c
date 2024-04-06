@@ -16562,6 +16562,13 @@ dumpTableSchema(Archive *fout, const TableInfo *tbinfo)
 
 				switch (tbinfo->attcompression[j])
 				{
+					/**hocotext*/
+					case 'r':
+						cmname = "rle";
+						break;
+					case 't':
+						cmname = "tadoc";
+						break;
 					case 'p':
 						cmname = "pglz";
 						break;

@@ -2517,7 +2517,8 @@ psql_completion(const char *text, int start, int end)
 	/* ALTER TABLE ALTER [COLUMN] <foo> SET COMPRESSION */
 	else if (Matches("ALTER", "TABLE", MatchAny, "ALTER", "COLUMN", MatchAny, "SET", "COMPRESSION") ||
 			 Matches("ALTER", "TABLE", MatchAny, "ALTER", MatchAny, "SET", "COMPRESSION"))
-		COMPLETE_WITH("DEFAULT", "PGLZ", "LZ4");
+	/** hocotext */
+		COMPLETE_WITH("DEFAULT", "PGLZ", "LZ4","RLE","TADOC");
 	/* ALTER TABLE ALTER [COLUMN] <foo> SET EXPRESSION */
 	else if (Matches("ALTER", "TABLE", MatchAny, "ALTER", "COLUMN", MatchAny, "SET", "EXPRESSION") ||
 			 Matches("ALTER", "TABLE", MatchAny, "ALTER", MatchAny, "SET", "EXPRESSION"))
