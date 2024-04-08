@@ -98,8 +98,6 @@ static void parse_rule(rule_index_t rule_index, uint32_t start_text_pos, char* r
 		// debug("read character: %c\n", *cur_parse_pos);
 		// the character belones to a simple word
 		if (is_letter(*cur_parse_pos)) {
-			parsed_wpos->alen = 0; // not a word array, so make alen=0 
-			parsed_wpos->nvariant = 0; // no consideration to nvariant
 			parsed_wpos->pos.pos = cur_text_pos;
 			// TODO: write flag of parsed wpos???
 			// this flag is not used in make vector, useless now
@@ -151,11 +149,152 @@ static void parse_rule(rule_index_t rule_index, uint32_t start_text_pos, char* r
 }
 
 void print_word(ParsedWord pw) {
-	printf("%u: ", pw.pos.pos);
+	// printf("%u: ", pw.pos.pos);
 	for (int i = 0; i < pw.len; ++i) {
 		printf("%c", pw.word[i]);
 	}
 	printf("\n");
+}
+
+
+/*
+ * Compare two strings by tsvector rules.
+ *
+ * if prefix = true then it returns zero value iff b has prefix a
+ */
+static int32_t compare_string(char *a, int lena, char *b, int lenb, int prefix)
+{
+	int			cmp;
+
+	if (lena == 0)
+	{
+		if (prefix)
+			cmp = 0;			/* empty string is prefix of anything */
+		else
+			cmp = (lenb > 0) ? -1 : 0;
+	}
+	else if (lenb == 0)
+	{
+		cmp = (lena > 0) ? 1 : 0;
+	}
+	else
+	{
+		cmp = memcmp(a, b, Min((unsigned int) lena, (unsigned int) lenb));
+
+		if (prefix)
+		{
+			if (cmp == 0 && lena > lenb)
+				cmp = 1;		/* a is longer, so not a prefix of b */
+		}
+		else if (cmp == 0 && lena != lenb)
+		{
+			cmp = (lena < lenb) ? -1 : 1;
+		}
+	}
+
+	return cmp;
+}
+
+static int compare_word(const void *a, const void *b)
+{
+	int			res;
+
+	res = compare_string(((const ParsedWord *) a)->word, ((const ParsedWord *) a)->len,
+						  ((const ParsedWord *) b)->word, ((const ParsedWord *) b)->len,
+						  0);
+
+	if (res == 0)
+	{
+		if (((const ParsedWord *) a)->pos.pos == ((const ParsedWord *) b)->pos.pos)
+			return 0;
+
+		res = (((const ParsedWord *) a)->pos.pos > ((const ParsedWord *) b)->pos.pos) ? 1 : -1;
+	}
+
+	return res;
+}
+
+#define MIN_POS_ARRAY_LEN 1000
+
+static HocotextTsvector* hocotext_make_tsvector(ParsedText *parsed_text) {
+	uint32_t total_words = parsed_text->curwords;
+	ParsedWord* words = parsed_text->words;
+	qsort(words, total_words, sizeof(ParsedWord), compare_word);
+
+	// for (int i = 0; i < total_words; ++i) {
+	// 	for (int j = 0; j < words[i].len; ++j) {
+	// 		printf("%c", words[i].word[j]);
+	// 	}
+	// 	printf("\n");
+	// }
+
+	HocotextTsvector* tsvector = (HocotextTsvector*)malloc(sizeof(HocotextTsvector));
+	tsvector->word_entry = words;
+	
+	tsvector->word_entry[0].pos_arr_len_esti = MIN_POS_ARRAY_LEN;
+	uint32_t first_word_pos = words[0].pos.pos;
+	tsvector->word_entry[0].pos.pos_arr = (uint32_t*)malloc(sizeof(uint32_t) * tsvector->word_entry[0].pos_arr_len_esti);
+	tsvector->word_entry[0].pos.pos_arr[0] = first_word_pos;
+	tsvector->word_entry[0].pos_arr_len = 1;
+	tsvector->word_entry[0].len = words[0].len;
+	tsvector->num_diffwords = 1;
+
+	for (int i = 1; i < total_words; ++i) {
+		ParsedWord* cur_word = &(tsvector->word_entry[tsvector->num_diffwords - 1]);
+		// printf("curword (len: %d) is ", cur_word->len);
+		// print_word(*cur_word);
+		// printf("word %d (len: %d) is ", i, words[i].len);
+		// print_word(words[i]);
+		if (words[i].len == cur_word->len && 
+			strncmp(words[i].word, cur_word->word, words[i].len) == 0) {
+			// printf("same!\n");
+			cur_word->pos.pos_arr[cur_word->pos_arr_len] = words[i].pos.pos;
+			cur_word->pos_arr_len += 1;
+			if (cur_word->pos_arr_len > cur_word->pos_arr_len_esti / 2) {
+				cur_word->pos_arr_len_esti *= 2;
+				cur_word->pos.pos_arr = (uint32_t*)realloc(
+					cur_word->pos.pos_arr,
+					cur_word->pos_arr_len_esti * sizeof(uint32_t)
+				);
+			}
+		}
+		else {
+			// printf("create a new!\n");
+			tsvector->num_diffwords += 1;
+			cur_word = &(tsvector->word_entry[tsvector->num_diffwords - 1]);
+			cur_word->len = words[i].len;
+			cur_word->pos_arr_len_esti = MIN_POS_ARRAY_LEN;
+			cur_word->pos.pos_arr = (uint32_t*)malloc(sizeof(uint32_t) * tsvector->word_entry[tsvector->num_diffwords-1].pos_arr_len_esti);
+			cur_word->pos.pos_arr[0] = words[i].pos.pos;
+			cur_word->pos_arr_len = 1;
+			cur_word->word = words[i].word;
+		}
+	}
+
+	printf("number of total words: %d, number of unique words: %d\n", total_words, tsvector->num_diffwords);
+	return tsvector;
+}
+
+#define MIN_ALLOC_LEN 19790326
+
+static char* tsvector2text(HocotextTsvector* tsvector, uint32_t* ret_len) {
+	uint32_t alloc_len = MIN_ALLOC_LEN;
+	char* buffer = (char*)malloc(alloc_len * sizeof(char));
+	uint32_t write_bytes = 0;
+	for (int i = 0; i < tsvector->num_diffwords; ++i) {
+		write_bytes += sprintf(buffer+write_bytes, "'%.*s': ", tsvector->word_entry[i].len, tsvector->word_entry[i].word);
+		for (int j = 0; j < tsvector->word_entry[i].pos_arr_len - 1; ++j) {
+			write_bytes += sprintf(buffer + write_bytes, "%u,", tsvector->word_entry[i].pos.pos_arr[j]);
+		}
+		write_bytes += sprintf(buffer + write_bytes, "%u", tsvector->word_entry[i].pos.pos_arr[tsvector->word_entry[i].pos_arr_len - 1]);
+		write_bytes += sprintf(buffer + write_bytes, "%c", '\n');
+		if (write_bytes > alloc_len / 2) {
+			alloc_len *= 2;
+			buffer = (char*)realloc(buffer, alloc_len * sizeof(char));
+		}
+	}
+	*ret_len = write_bytes;
+	return buffer;
 }
 
 /**
@@ -203,11 +342,15 @@ void tadoc_to_tsvector(char* tadoc_comp_data) {
 	// parsed_text.cur_words is the number of words porcessed
 	parsed_text.curwords = parsed_rules[0].num_words;
 	// parsed_text.pos is the position of current processing word
-	parsed_text.pos = parsed_rules[0].real_length;
 	
-	for (int i = 0; i < parsed_text.curwords; ++i) {
-		print_word(parsed_text.words[i]);
-	}
+	// for (int i = 0; i < parsed_text.curwords; ++i) {
+	// 	print_word(parsed_text.words[i]);
+	// }
 
 	debug("%s", "end make_tsvector\n");
+
+	HocotextTsvector* tsvector = hocotext_make_tsvector(&parsed_text);
+	uint32_t ret_size;
+	char* result = tsvector2text(tsvector, &ret_size);
+	printf("%s", result);
 }

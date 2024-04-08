@@ -4,43 +4,26 @@
 #include <string.h>
 #include <time.h>
 
-typedef struct
-{
-	uint16_t		flags;			/* currently, only TSL_PREFIX */
-	uint16_t		len;
-	uint16_t		nvariant;
-	uint16_t		alen;
-	union
-	{
-		uint32_t		pos;
-
-		/*
-		 * When apos array is used, apos[0] is the number of elements in the
-		 * array (excluding apos[0]), and alen is the allocated size of the
-		 * array.  We do not allow more than MAXNUMPOS array elements.
-		 */
-		uint32_t	   *apos;
-	}			pos;
-	char	   *word;
-} ParsedWord;
-
-typedef struct
-{
-	ParsedWord *words;
-	int32_t		lenwords;
-	int32_t		curwords;
-	int32_t		pos;
-} ParsedText;
+#define Min(x,y) ((x) < (y) ? (x) : (y))
 
 /**
  * tadoc_(de)compress()
  * internal compression module
 */
 
-/**
- * tadoc to_tsvector
-*/
-struct ParsedRule {
+
+typedef struct ParsedWord {
+	uint32_t		len;
+	uint32_t		pos_arr_len;
+	uint32_t		pos_arr_len_esti;
+	union {
+		uint32_t pos;
+		uint32_t* pos_arr;
+	} pos;
+	char	   *word;
+} ParsedWord;
+
+typedef struct ParsedRule {
 	// whether parsed or not
 	uint32_t is_parsed;
 	// length of the word array of this rule
@@ -49,8 +32,18 @@ struct ParsedRule {
 	uint32_t real_length;
 	// start position in the array
 	ParsedWord* parse_start;
-};
+} ParsedRule;
 
+typedef struct ParsedText {
+	ParsedWord *words;
+	int32_t		lenwords;
+	int32_t		curwords;
+} ParsedText;
+
+typedef struct HocotextTsvector {
+	uint32_t num_diffwords;
+	ParsedWord* word_entry;
+} HocotextTsvector;
 /**
  * TADOC Decompressed Rule Entry
 */

@@ -98,6 +98,14 @@ uniqueWORD(ParsedWord *a, int32 l)
 	 */
 	qsort(a, l, sizeof(ParsedWord), compareWORD);
 
+	// for (int i = 0; i < l; ++i) {
+	// 	printf("%d: ", i);
+	// 	for (int j = 0; j < a[i].len; j++) {
+	// 		printf("%c", a[i].word[j]);
+	// 	}
+	// 	printf("\n");
+	// }
+
 	/*
 	 * Initialize first word and its first position
 	 */
@@ -112,6 +120,7 @@ uniqueWORD(ParsedWord *a, int32 l)
 	 */
 	while (ptr - a < l)
 	{
+		// ptr is not same as res
 		if (!(ptr->len == res->len &&
 			  strncmp(ptr->word, res->word, res->len) == 0))
 		{
@@ -127,6 +136,7 @@ uniqueWORD(ParsedWord *a, int32 l)
 			res->pos.apos[0] = 1;
 			res->pos.apos[1] = tmppos;
 		}
+		// ptr is same as res
 		else
 		{
 			/*
@@ -135,7 +145,8 @@ uniqueWORD(ParsedWord *a, int32 l)
 			 * value for position and uniqueness of position
 			 */
 			// pfree(ptr->word);
-			if (res->pos.apos[0] < MAXNUMPOS - 1 && res->pos.apos[res->pos.apos[0]] != MAXENTRYPOS - 1 &&
+			if (res->pos.apos[0] < MAXNUMPOS - 1 && 
+				res->pos.apos[res->pos.apos[0]] != MAXENTRYPOS - 1 &&
 				res->pos.apos[res->pos.apos[0]] != LIMITPOS(ptr->pos.pos))
 			{
 				if (res->pos.apos[0] + 1 >= res->alen)

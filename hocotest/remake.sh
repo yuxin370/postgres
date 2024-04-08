@@ -16,12 +16,8 @@ echo 'Compile End'
 
 # pg_ctl -D $PGHOME/data stop -m immediate
 
-
 # pg_ctl -D $PGHOME/data start
 pg_ctl start
-
-# stupid method always works
-sudo cp -r /usr/local/pgsql/share/extension/* /usr/share/postgresql/extension/ 
 
 cd ./hocotest/
 

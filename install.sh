@@ -14,7 +14,7 @@ make distclean
 ./configure --prefix=/usr \
     --enable-debug \
     --enable-depend \
-    CCFLAG=-O0 \
+    CCFLAG=-O3 \
     CC='gcc'
 
 make -j 4

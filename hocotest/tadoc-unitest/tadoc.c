@@ -1,6 +1,6 @@
 #include "tadoc.h"
 
-#define DEBUG 1
+// #define DEBUG 1
 
 #ifdef DEBUG
     #define debug(fmt, ...) fprintf(stdout, fmt, __VA_ARGS__)
@@ -936,7 +936,7 @@ int main() {
     char *src_buffer, *dest_buffer;
     long file_size;
     size_t result;
-	char file_name [100] = "../../dataset/Horspool-tiny.txt";
+	char file_name [100] = "../../dataset/json.txt";
 	fp = fopen(file_name, "r");
     if (fp == NULL) {
         printf("can not open file %s\n", file_name);

@@ -1,6 +1,6 @@
 #include "hocotext.h"
 
-#define DEBUG 1
+// #define DEBUG 1
 
 #ifdef DEBUG
     #define debug(fmt, ...) fprintf(stdout, fmt, __VA_ARGS__)
@@ -17,7 +17,7 @@ union SymbolData;
 typedef struct Symbol Symbol;
 typedef struct Rule Rule;
 typedef union SymbolData SymbolData;
-#define MAX_WORD_LENGTH 64
+
 #define PRIME 99999989 // a magical prime number
 #define HER_BIRTHDAY 19790326 // her birthday
 #define JUMP_NUMBER 9973
@@ -115,7 +115,7 @@ static DecompRule* decomp_rules;
  * will generate a symbol as its guard
 */
 static void gen_rule(Rule** new_rule) {
-    *new_rule = (Rule*)malloc(sizeof(Rule));
+    *new_rule = (Rule*)palloc(sizeof(Rule));
     num_rules++;
     (*new_rule)->count = 0;
     (*new_rule)->index = 0;  // index==0 means the rule has not been appended to rules array
@@ -151,7 +151,7 @@ static inline void deuse_rule(Rule* rule) {
  * @brief generate a rule-symbol according to an existing rule
 */
 static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
     (*new_symbol)->data.rule = rule;
     (*new_symbol)->is_rulesymbol = 1;
     (*new_symbol)->p = (*new_symbol)->n = NULL;
@@ -163,7 +163,7 @@ static void gen_rulesymbol(Rule *rule, Symbol** new_symbol) {
  * @brief genrate a common symbol according to a word
 */
 static void gen_symbol(char* word, uint32_t word_len, Symbol** new_symbol) {
-    *new_symbol = (Symbol*)malloc(sizeof(Symbol));
+    *new_symbol = (Symbol*)palloc(sizeof(Symbol));
     memset((*new_symbol)->data.word, '\0', MAX_WORD_LENGTH);
     strncpy((*new_symbol)->data.word, word, word_len);
     (*new_symbol)->is_rulesymbol = 0;
@@ -423,7 +423,7 @@ uint32_t check_digram(Symbol* new_digram) {
  * @brief alloc memory and initialize digram table
 */
 static inline void init_digram_table(int32_t size) {
-    digram_table = (Symbol**)malloc(sizeof(Symbol*) * size);
+    digram_table = (Symbol**)palloc(sizeof(Symbol*) * size);
     for (int i = 0; i < size; ++i) {
         digram_table[i] = NULL;
     }
@@ -775,7 +775,7 @@ uint32_t __tadoc_compress(char *source, uint32_t slen, char *dest) {
 	// debug("%lf hash conflicts per word\n", (double)num_conflict / num_word);
 	
 	// all rules are stored in memory now, print to dest
-    rule_array = (Rule**)malloc(sizeof(Rule*) * num_rules);
+    rule_array = (Rule**)palloc(sizeof(Rule*) * num_rules);
     // use a depth-first-search way to discover all rules
     discover(start_rule);
     debug("num_rules: %d, num_detected_rules: %d\n", num_rules, num_detected_rules);
@@ -790,7 +790,7 @@ uint32_t __tadoc_decompress(char *source, char *dest) {
     debug("tadoc decompress: num_rules is %d\n", num_rules);
     // initialize decompress rules array
 	debug("memory use of decomp_rules array is %ld\n", sizeof(DecompRule) * num_rules);
-    decomp_rules = (DecompRule*)malloc(sizeof(DecompRule) * num_rules);
+    decomp_rules = (DecompRule*)palloc(sizeof(DecompRule) * num_rules);
     for (int i = 0; i < num_rules; ++i) {
         decomp_rules[i].finished = 0;
     }
@@ -847,11 +847,11 @@ text * tadoc_decompress(struct varlena *source, Oid collid) {
 	char* comp_data_start = VARDATA_ANY(source);
 	// uint32_t comp_size = VARSIZE_ANY_EXHDR(source);
 	uint32_t raw_size = *((uint32_t*)comp_data_start);
-	printf("decompressed raw_size is %d\n", raw_size);
+	// printf("decompressed raw_size is %d\n", raw_size);
 	text* dest = (text*)palloc(raw_size + VARHDRSZ);
 	char* raw_data_start = VARDATA_ANY(dest);
 	raw_size = __tadoc_decompress(comp_data_start, raw_data_start);
-	printf("decompress return size is %d\n", raw_size);
+	// printf("decompress return size is %d\n", raw_size);
 	SET_VARSIZE(dest, raw_size + VARHDRSZ);
 	return dest;
 }

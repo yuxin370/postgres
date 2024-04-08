@@ -18,7 +18,7 @@
 #include "access/toast_internals.h"
 #include "postgres_ext.h"
 #include "portability/instr_time.h"
-#include "tsearch/ts_utils.h"
+#include "port.h"
 #include <sys/time.h>
 #include <assert.h>
 #include <stdint.h>
@@ -150,19 +150,8 @@ extern text * hocotext_rle_hoco_concat(struct varlena * left,struct varlena * ri
  * internal compression module
 */
 
-/**
- * tadoc to_tsvector
-*/
-typedef struct ParsedRule {
-	// whether parsed or not
-	uint8_t is_parsed;
-	// length of the word array of this rule
-	uint32_t num_words;
-	// start position in the array
-	ParsedWord* parse_start;
-	// the real length of this rule
-	uint32_t real_length;
-};
+#define MAX_WORD_LENGTH 64
+
 
 /**
  * TADOC Decompressed Rule Entry
@@ -186,9 +175,46 @@ typedef struct DecompRule DecompRule;
 typedef uint32_t rule_offset_t;
 #define RESERVE_CHAR '^'
 
+/**
+ * tadoc to_tsvector
+*/
+
+typedef struct ParsedWord {
+	uint32_t		len;
+	uint32_t		pos_arr_len;
+	uint32_t		pos_arr_len_esti;
+	union {
+		uint32_t pos;
+		uint32_t* pos_arr;
+	} pos;
+	char	   *word;
+} ParsedWord;
+
+typedef struct ParsedRule {
+	// whether parsed or not
+	uint32_t is_parsed;
+	// length of the word array of this rule
+	uint32_t num_words;
+	// the real length of this rule
+	uint32_t real_length;
+	// start position in the array
+	ParsedWord* parse_start;
+} ParsedRule;
+
+typedef struct ParsedText {
+	ParsedWord *words;
+	uint32_t		lenwords;
+	uint32_t		curwords;
+} ParsedText;
+
+typedef struct HocotextTsvector {
+	uint32_t num_diffwords;
+	ParsedWord* word_entry;
+} HocotextTsvector;
+
 extern text * tadoc_compress(struct varlena *source, Oid collid);
 extern text * tadoc_decompress(struct varlena *source, Oid collid);
-extern TSVector tadoc_to_tsvector(char* tadoc_comp_data);
+extern text * tadoc_to_tsvector(char* tadoc_comp_data);
 
 
 #endif          /*HOCOTEXT_H*/

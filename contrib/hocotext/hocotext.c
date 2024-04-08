@@ -308,7 +308,7 @@ hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
 	// printf("hocotext_decompress_tadoc decompress cost %f ms\n",1000.0 * totaltime);
 	// printf("origin text is %s\n", VARDATA_ANY(result));
 	PG_FREE_IF_COPY(source, 0);
-	printf("after free...\n");
+	// printf("after free...\n");
 	PG_RETURN_TEXT_P(result);
 }
 
@@ -573,6 +573,6 @@ hocotext_hash(PG_FUNCTION_ARGS){
 Datum hocotext_to_tsvector(PG_FUNCTION_ARGS) {
 	text* comp_var = PG_GETARG_TEXT_PP(0);
 	char* comp_data = VARDATA_ANY(comp_var);
-	TSVector out = tadoc_to_tsvector(comp_data);
-	PG_RETURN_TSVECTOR(out);
+	text* out  = tadoc_to_tsvector(comp_data);
+	PG_RETURN_TEXT_P(out);
 }

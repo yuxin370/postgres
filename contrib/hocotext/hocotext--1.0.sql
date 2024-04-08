@@ -138,7 +138,7 @@ AS 'MODULE_PATHNAME','hocotext_delete'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION "hoco_rle"( text )
-RETURNS text
+RETURNS hocotext
 AS 'MODULE_PATHNAME','hocotext_compress_rle'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -148,7 +148,7 @@ AS 'MODULE_PATHNAME','hocotext_decompress_rle'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION "hoco_tadoc"( text )
-RETURNS text
+RETURNS hocotext
 AS 'MODULE_PATHNAME','hocotext_compress_tadoc'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -157,9 +157,9 @@ RETURNS text
 AS 'MODULE_PATHNAME','hocotext_decompress_tadoc'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION hocotext_to_tsvector( hocotext )
-RETURNS tsvector 
-AS 'MODULE_PATHNAME'
+CREATE FUNCTION "to_tsvector"( hocotext )
+RETURNS text
+AS 'MODULE_PATHNAME', 'hocotext_to_tsvector'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Operators

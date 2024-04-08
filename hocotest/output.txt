@@ -1,0 +1,10 @@
+DROP TABLE
+DROP EXTENSION
+CREATE EXTENSION
+CREATE TABLE
+INSERT 0 1
+ pg_backend_pid 
+----------------
+          10045
+(1 row)
+

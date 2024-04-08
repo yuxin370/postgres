@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+ <rdmgr>
+  <timestamp type="u64_t">1712493678</timestamp>
+  <hostname type="string">iZ2zei3aj5p2m5b876fn67Z</hostname>
+  <os type="string">linux</os>
+  <product type="string">Intel® VTune™ Profiler 2024.1.0</product>
+  <buildNumber type="s32_t">627630</buildNumber>
+  <logicalCPUCount type="s32_t">4</logicalCPUCount>
+  <physicalCoreCount type="s32_t">2</physicalCoreCount>
+  <processorPackageCount type="s32_t">1</processorPackageCount>
+  <CPUFrequency type="s64_t">2499998000</CPUFrequency>
+  <CPUFamily type="s32_t">6</CPUFamily>
+  <CPUModel type="s32_t">85</CPUModel>
+  <CPUStepping type="s32_t">4</CPUStepping>
+  <CPUBrandName type="string">Intel(R) Xeon(R) Platinum</CPUBrandName>
+  <isa type="string">avx512</isa>
+  <collectionTimeBegin type="u64_t">1712493678</collectionTimeBegin>
+  <collectionTimeEnd type="u64_t">1712493687</collectionTimeEnd>
+  <variables>
+   <at type="string">mc</at>
+  </variables>
+ </rdmgr>
+</root>
