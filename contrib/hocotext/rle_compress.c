@@ -128,7 +128,7 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
         store_single_buf(dp,buf_base,buf,false);
     }
     *dp = '\0';
-
+    pfree(buf);
     return (int32)(dp - dstart);
 }
 
