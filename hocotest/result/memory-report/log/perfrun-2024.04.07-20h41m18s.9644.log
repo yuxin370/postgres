@@ -1,0 +1,123 @@
+1 [139713694308160] INFO perfrun.launcher <> - Launcher main begin
+1 [139713694308160] INFO perfrun.launcher <> - MessageCatalogInit finished
+1 [139713694308160] INFO perfrun.launcher <> - Launcher instance created
+1 [139713694308160] INFO perfrun.launcher <> - argc = 7; cmdline = /opt/intel/oneapi/vtune/2024.1/bin64/amplxe-runss --ui-output-format xml --ui-output-fd 5 --option-file /home/yeweitang/postgres/hocotest/result/memory-report/config/runss.options 
+43 [139713694308160] INFO perfrun.launcher <> - create msngr2::ICliToolContext
+43 [139713694308160] INFO perfrun.launcher <> - create file finder object
+43 [139713694308160] INFO perfrun.launcher <> - create a result directory: pattern = /home/yeweitang/postgres/hocotest/result/memory-report pid = 9395
+44 [139713694308160] INFO perfrun.sdk <> - checked that the directory /home/yeweitang/postgres/hocotest/result/memory-report is a local directory
+44 [139713694308160] INFO perfrun.sdk <> - the directory /home/yeweitang/postgres/hocotest/result/memory-report is a local directory with FS type ID 61267
+44 [139713694308160] INFO perfrun.sdk <> - Check that directory /home/yeweitang/postgres/hocotest/result/memory-report is accessible from the process #9395
+44 [139713694308160] INFO perfrun.sdk <> - Extracted UID=1000 EUID=1000 from 'Uid:	1000	1000	1000	1000'
+44 [139713694308160] INFO perfrun.sdk <> - Extracted UID=1000 EGID=1000 from 'Gid:	1000	1000	1000	1000'
+44 [139713694308160] INFO perfrun.sdk <> - Process #9395 is running under user UID=1000 GID=1000
+44 [139713694308160] INFO perfrun.sdk <> - Check that the directory /home/yeweitang/postgres/hocotest/result/memory-report is accessible to the given user UID=1000 GID=1000
+45 [139713694308160] INFO perfrun.sdk <> - The directory is accessible.
+45 [139713694308160] INFO perfrun.sdk <> - UID=1000 has write permission to /home/yeweitang/postgres/hocotest/result/memory-report
+45 [139713694308160] INFO perfrun.launcher <> - create data directory = /home/yeweitang/postgres/hocotest/result/memory-report/data.0
+45 [139713694308160] INFO perfrun.launcher <> - Creating the master collection flag
+47 [139713694308160] INFO perfrun.launcher <> - Done creating the master collection flag
+47 [139713543398976] INFO perfrun.launcher <> - plugin [remoteplug] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.sdk <> - Allocating TMU :/home/yeweitang/postgres/hocotest/result/memory-report/data.0/systemcollector-9644-iZ2zei3aj5p2m5b876fn67Z.sc
+48 [139713543398976] INFO perfrun.system <> - Tpss based collection
+48 [139713543398976] INFO perfrun.launcher <> - plugin [ptracecollector] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.launcher <> - plugin [gpu] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+48 [139713543398976] INFO perfrun.mrte <> - system-wide mode is 0
+48 [139713543398976] INFO perfrun.mrte <> - Getting  mrte profiling environment ...
+55 [139713543398976] INFO perfrun.mrte <> - INTEL_MRTE_DATA_DIR=/home/yeweitang/postgres/hocotest/result/memory-report/data.0
+55 [139713543398976] INFO perfrun.mrte <> - INTEL_MRTE_HOST_NAME=iZ2zei3aj5p2m5b876fn67Z
+55 [139713543398976] INFO perfrun.mrte <> - JAVA_TOOL_OPTIONS=-agentlib:amplxe_tpssmrte_javaprof_1.0 -Dsun.boot.library.path=/opt/intel/oneapi/vtune/2024.1/lib32/runtime:/opt/intel/oneapi/vtune/2024.1/lib64/runtime
+55 [139713543398976] INFO perfrun.mrte <> - LD_LIBRARY_PATH=/opt/intel/oneapi/vtune/2024.1/lib32/runtime:/opt/intel/oneapi/vtune/2024.1/lib64/runtime
+55 [139713543398976] INFO perfrun.mrte <> - CORECLR_ENABLE_PROFILING=1
+55 [139713543398976] INFO perfrun.mrte <> - CORECLR_PROFILER={AA5E4821-E3B1-479c-B7FF-5AD047D22CED}
+55 [139713543398976] INFO perfrun.mrte <> - CORECLR_PROFILER_PATH=/opt/intel/oneapi/vtune/2024.1/lib64/libamplxe_samplingmrte_clrprof_1.0.so
+55 [139713543398976] INFO perfrun.mrte <> - INTEL_MRTE_PROFILER_MODE=mixed
+55 [139713543398976] INFO perfrun.mrte <> - Data directory: /home/yeweitang/postgres/hocotest/result/memory-report/data.0
+55 [139713543398976] INFO perfrun.mrte <> - Mrte plugin is initialized
+55 [139713543398976] INFO perfrun.launcher <> - plugin [emon] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [cuscol] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [stdsrc] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [sep] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [vtsspp] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [perf] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [aoclprofile] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.tpss <> - initialize tpss controller
+55 [139713543398976] INFO perfrun.tpss <> - configure collection mode: value = memory
+55 [139713543398976] INFO perfrun.tpss <> - default obj-size-min=1024
+55 [139713543398976] INFO perfrun.tpss <> - default hash-table-size=0
+55 [139713543398976] INFO perfrun.tpss <> - obj-size-min 32
+55 [139713543398976] INFO perfrun.tpss <> - hash-table-size 0
+55 [139713543398976] INFO perfrun.launcher <> - plugin [media] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [parallelfs] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [power] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [ipmwatch] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [os_counters] was disabled because it doesn't support the given collection type.
+55 [139713543398976] INFO perfrun.launcher <> - plugin [l0_metrics] was disabled because it doesn't support the given collection type.
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: LD_LIBRARY_PATH = /opt/intel/oneapi/vtune/2024.1/lib32/runtime:/opt/intel/oneapi/vtune/2024.1/lib64/runtime
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_LIBITTNOTIFY32 = /opt/intel/oneapi/vtune/2024.1/lib32/runtime/libittnotify_collector.so
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_LIBITTNOTIFY64 = /opt/intel/oneapi/vtune/2024.1/lib64/runtime/libittnotify_collector.so
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_ITTNOTIFY_GROUPS = 
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_JIT_PROFILER32 = /opt/intel/oneapi/vtune/2024.1/lib32/runtime/libittnotify_collector.so
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_JIT_PROFILER64 = /opt/intel/oneapi/vtune/2024.1/lib64/runtime/libittnotify_collector.so
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: ENABLE_JITPROFILING = 1
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: CL_CONFIG_USE_VTUNE = True
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: KMP_FORKJOIN_FRAMES = 0
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: KMP_FORKJOIN_FRAMES_MODE = 0
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_MRTE_DATA_DIR = /home/yeweitang/postgres/hocotest/result/memory-report/data.0
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_MRTE_HOST_NAME = iZ2zei3aj5p2m5b876fn67Z
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: JAVA_TOOL_OPTIONS = -agentlib:amplxe_tpssmrte_javaprof_1.0 -Dsun.boot.library.path=/opt/intel/oneapi/vtune/2024.1/lib32/runtime:/opt/intel/oneapi/vtune/2024.1/lib64/runtime
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: LD_LIBRARY_PATH = /opt/intel/oneapi/vtune/2024.1/lib32/runtime:/opt/intel/oneapi/vtune/2024.1/lib64/runtime
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: CORECLR_ENABLE_PROFILING = 1
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: CORECLR_PROFILER = {AA5E4821-E3B1-479c-B7FF-5AD047D22CED}
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: CORECLR_PROFILER_PATH = /opt/intel/oneapi/vtune/2024.1/lib64/libamplxe_samplingmrte_clrprof_1.0.so
+56 [139713694308160] INFO perfrun.launcher <> - set environment variable: INTEL_MRTE_PROFILER_MODE = mixed
+56 [139713694308160] INFO perfrun.launcher <> - RpcServer: run RPC server to handle requests
+56 [139713694308160] INFO perfrun.launcher <> - ProcessSticker object was created for process with pid = 9395
+56 [139713694308160] INFO perfrun.launcher <> - Launcher was attached to PID = 9395
+57 [139713543398976] WARN perfrun.system <> - Could not do anything with /sys/kernel/debug/kvm: boost::filesystem::status: Permission denied [system:13]: "/sys/kernel/debug/kvm", at file: vcs/perfrun1/plugins/system/src/trace_writer.cpp:787
+57 [139713543398976] WARN perfrun.system <> - Folder "/var/run/libvirt/qemu/"doesn't exist, at file: vcs/perfrun1/plugins/system/src/trace_writer.cpp:800
+58 [139713543398976] INFO perfrun.sdk <> - runCmd: /opt/intel/oneapi/vtune/2024.1/bin64/sep -platform-info
+58 [139713543398976] INFO perfrun.sdk <> - runCmd started PID 9650
+63 [139713543398976] WARN perfrun.sdk <> - SEP driver is not available, at file: vcs/perfrun1/plugins/pluginsdk/src/device_mapper.cpp:946
+63 [139713543398976] INFO perfrun.sdk <> - runCmd: /opt/intel/oneapi/vtune/2024.1/bin64/amplxe-perf stat --iostat=list
+64 [139713543398976] INFO perfrun.sdk <> - runCmd started PID 9651
+65 [139713543398976] WARN perfrun.sdk <> - Device mapping through perf is not available on current kernel, at file: vcs/perfrun1/plugins/pluginsdk/src/device_mapper.cpp:1177
+66 [139713543398976] INFO perfrun.sdk <> - runCmd: /opt/intel/oneapi/vtune/2024.1/bin64/sep -platform-info
+67 [139713543398976] INFO perfrun.sdk <> - runCmd started PID 9652
+72 [139713543398976] WARN perfrun.sdk <> - SEP driver is not available, at file: vcs/perfrun1/plugins/pluginsdk/src/device_mapper.cpp:946
+72 [139713543398976] INFO perfrun.sdk <> - runCmd: /opt/intel/oneapi/vtune/2024.1/bin64/amplxe-perf stat --iostat=list
+72 [139713543398976] INFO perfrun.sdk <> - runCmd started PID 9653
+73 [139713543398976] WARN perfrun.sdk <> - Device mapping through perf is not available on current kernel, at file: vcs/perfrun1/plugins/pluginsdk/src/device_mapper.cpp:1177
+74 [139713543398976] WARN perfrun.sdk <> - Failed to find xl binary on any of the system paths: /bin, /sbin, /usr/bin, /usr/sbin., at file: vcs/perfrun1/sdk/src/utils.cpp:204
+74 [139713543398976] WARN perfrun.system <> - Could not start ContainerMapping collector, at file: vcs/perfrun1/plugins/system/src/controller.cpp:448
+98 [139713543398976] INFO perfrun.vdso <> - Helper runtool '/opt/intel/oneapi/vtune/2024.1/bin32/amplxe-runss -dump-vdso -r /home/yeweitang/postgres/hocotest/result/memory-report --tmp-dir /tmp/amplxe-tmp-yeweitang' returned 0
+154 [139713543398976] INFO perfrun.vdso <> - Helper runtool '/opt/intel/oneapi/vtune/2024.1/bin64/amplxe-runss -dump-vdso -r /home/yeweitang/postgres/hocotest/result/memory-report --tmp-dir /tmp/amplxe-tmp-yeweitang' returned 0
+154 [139713543398976] INFO perfrun.itt <> - attach itt controller to pid #9395
+154 [139713543398976] WARN perfrun.itt <> - attach itt controller to pid #9395failed, probably not configured, at file: vcs/perfrun1/plugins/itt/src/controller.cpp:258
+154 [139713543398976] INFO perfrun.mrte <> - Attach to pid #9395
+154 [139713543398976] INFO perfrun.tpss <> - attach tpss controller to pid #9395
+1788 [139713694308160] INFO perfrun.launcher <> - Launcher: all plugins were attached to PID = 9395
+1788 [139713694308160] INFO perfrun.launcher <> - DirectoryMonitor object was created
+1788 [139713694308160] INFO perfrun.launcher <> - DirectoryMonitor: a callback was added
+1788 [139713694308160] INFO perfrun.launcher <> - DirectoryMonitor was started with pingTime = 1000
+1788 [139713694308160] INFO perfrun.launcher <> - DeadlineTimer is going to be constructed
+1788 [139713694308160] INFO perfrun.launcher <> - DeadlineTimer: a callback was added
+9315 [139713694308160] INFO perfrun.launcher <> - SignalHandler: signal #2 was caught
+9319 [139713543398976] INFO perfrun.itt <> - detach itt controller
+9319 [139713543398976] INFO perfrun.itt <> - detach itt controller done
+9319 [139713543398976] INFO perfrun.tpss <> - stop tpss controller
+9398 [139713543398976] INFO perfrun.sdk <> - De-allocating TMU: /home/yeweitang/postgres/hocotest/result/memory-report/data.0/systemcollector-9644-iZ2zei3aj5p2m5b876fn67Z.sc
+9398 [139713543398976] INFO perfrun.system <> - closed the system trace file: /home/yeweitang/postgres/hocotest/result/memory-report/data.0/systemcollector-9644-iZ2zei3aj5p2m5b876fn67Z.sc
+9398 [139713694308160] INFO perfrun.launcher <> - Launcher: detach command was received or the profiled  application was terminated
+9398 [139713694308160] WARN perfrun.launcher <> - Stop command is ignored because it is received when collection is already stopped, at file: vcs/perfrun1/launcher/src/command_handler.cpp:226
+9398 [139713694308160] INFO perfrun.launcher <> - DeadlineTimer is going to be destroyed
+9398 [139713694308160] INFO perfrun.launcher <> - DeadlineTimer was destroyed
+9398 [139713694308160] INFO perfrun.launcher <> - DirectoryMonitor object was destroyed
+9398 [139713694308160] INFO perfrun.launcher <> - Application exit code: 0
+9398 [139713694308160] INFO perfrun.launcher <> - Exit code: 0

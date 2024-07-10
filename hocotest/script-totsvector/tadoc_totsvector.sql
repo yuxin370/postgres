@@ -11,6 +11,9 @@ DECLARE
 BEGIN
     RAISE NOTICE 'Creating data for test';
 
+    -- clear
+    DROP TABLE test;
+
     -- create a new table to test insert operation
     CREATE TABLE test (
         id SERIAL PRIMARY KEY,
@@ -21,14 +24,14 @@ BEGIN
     -- PERFORM char_length(c1) from baseline;
     -- test tadoc_compress 
     INSERT INTO test (content)
-    VALUES (hocotext_compress_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/Android')));
+    VALUES (hoco_tadoc(pg_read_file('/home/yeweitang/postgres/dataset/HDFS-medium.txt')));
 
     -- 执行 SELECT 语句十次
     RAISE NOTICE '';
     FOR i IN 1..10 LOOP
         start_time := clock_timestamp();
 
-        SELECT hocotext_to_tsvector(content) FROM test WHERE id = 1;
+        PERFORM to_tsvector(content) FROM test WHERE id = 1;
 
         end_time := clock_timestamp();
         elapsed_time := EXTRACT(EPOCH FROM (end_time - start_time));
@@ -49,8 +52,6 @@ BEGIN
   RAISE NOTICE 'Total Time: % ms', total_time * 1000;
   RAISE NOTICE 'Average Time: % ms', average_time * 1000;
   RAISE NOTICE 'Variance: %', variance;
-
-  -- clear
-  DROP TABLE test;
+  
   
 END $$;

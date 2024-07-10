@@ -1,0 +1,12 @@
+48 [139713543398976] INFO mrtehelpers.mrteenv <> - Product libs directory: /opt/intel/oneapi/vtune/2024.1/lib64
+48 [139713543398976] INFO mrtehelpers.mrteenv <> - File mask: amplxe_samplingmrte_clrprof*
+52 [139713543398976] INFO mrtehelpers.mrteenv <> - File name: libamplxe_samplingmrte_clrprof_1.0.so
+1755 [139713501435456] INFO mrtehelpers.attach <> - pid=9395
+1755 [139713501435456] INFO mrtehelpers.attach <> - baseName=tpssmrte
+1755 [139713501435456] INFO mrtehelpers.attach <> - dataDir=/home/yeweitang/postgres/hocotest/result/memory-report/data.0/
+1755 [139713501435456] ERROR mrtehelpers.attach <> - Failed to match pattern (\S+libjvm\.so), at file: vcs/mrtehelpers3/src/common/utils.cpp:1071
+1755 [139713501435456] ERROR mrtehelpers.attach <> - Not found libjvm, at file: vcs/mrtehelpers3/src/common/utils.cpp:1110
+1755 [139713501435456] ERROR mrtehelpers.attach <> - Java exe path is empty, at file: vcs/mrtehelpers3/src/common/utils.cpp:1481
+1755 [139713501435456] INFO mrtehelpers.attach <> - changed baseName=samplingmrte
+1766 [139713501435456] ERROR mrtehelpers.attach <> - Error accessing the socket, at file: vcs/mrtehelpers3/src/common/utils.cpp:1018
+1766 [139713501435456] ERROR mrtehelpers.attach <> - The specified process doesn't have diagnostics pipe, attach is impossible, at file: vcs/mrtehelpers3/src/attach/attach_mrte_profiler.cpp:122

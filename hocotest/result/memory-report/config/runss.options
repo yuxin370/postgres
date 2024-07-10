@@ -1,0 +1,16 @@
+-r
+/home/yeweitang/postgres/hocotest/result/memory-report
+--stack-stitching
+--data-limit-mb=1000
+--disk-space-limit=0
+--mrte-type=java,python
+--type=memory
+--memory-strategy=obj-size-min=32,hash-table-size=0
+--stack-unwind-limit=8388608
+--itt-config=frame
+--itt-config=task,event,counter
+--stackwalk=offline
+--mrte-mode=auto
+--platform-type=111
+--target-pid
+9395

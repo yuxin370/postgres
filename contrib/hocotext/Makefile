@@ -1,7 +1,7 @@
 # contrib/hocotext/Makefile
 
 CC = gcc
-CFLAGS = -std=c11 -g -O0 --enable-debug
+CFLAGS = -std=c11 -g -O3 --enable-debug
 
 MODULE_big = hocotext
 OBJS = \

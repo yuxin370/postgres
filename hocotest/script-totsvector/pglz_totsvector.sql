@@ -11,14 +11,18 @@ DECLARE
 BEGIN
     RAISE NOTICE 'Create table for test;';
 
-    -- create a new table to test insert operation
+    -- clear
+    DROP TABLE test;
+
+
+    -- -- create a new table to test insert operation
     CREATE TABLE test (
         id SERIAL PRIMARY KEY,
         content text compression pglz
     );
 
     INSERT INTO test (content)
-    VALUES (pg_read_file('/home/yeweitang/postgres/dataset/json.txt'));
+    VALUES (pg_read_file('/home/yeweitang/postgres/dataset/HDFS-medium.txt'));
 
     -- 执行 SELECT 语句十次
     RAISE NOTICE 'PERFORM to_tsvector on pglz compressed data';
@@ -48,8 +52,5 @@ BEGIN
     RAISE NOTICE 'Total Time: % ms', total_time * 1000;
     RAISE NOTICE 'Average Time: % ms', average_time * 1000;
     RAISE NOTICE 'Variance: %', variance;
-
-    -- clear
-    DROP TABLE test;
     
 END $$;

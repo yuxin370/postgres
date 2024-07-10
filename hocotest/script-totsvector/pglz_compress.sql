@@ -9,25 +9,24 @@ DECLARE
     variance NUMERIC := 0;
     i INT;
 BEGIN
-    RAISE NOTICE 'Create table for test;';
+    -- clear
+    DROP TABLE test;
 
     -- create a new table to test insert operation
     CREATE TABLE test (
         id SERIAL PRIMARY KEY,
-        content text
+        content text compression pglz
     );
 
-    INSERT INTO test (content)
-    VALUES (pg_read_file('/home/yeweitang/postgres/dataset/Android'));
-
     -- 执行 SELECT 语句十次
-    RAISE NOTICE 'PERFORM char_length(c1) from baseline;';
+    RAISE NOTICE 'PERFORM pglz compress + insert';
     FOR i IN 1..10 LOOP
         start_time := clock_timestamp();
     
         -- PERFORM char_length(c1) from baseline;
-        -- test pglz totsvector 
-        SELECT to_tsvector(content) FROM test WHERE id = 1;
+        -- test tadoc_compress 
+        INSERT INTO test (content)
+        VALUES (pg_read_file('/home/yeweitang/postgres/dataset/Thunderbird.txt'));
 
         end_time := clock_timestamp();
         elapsed_time := EXTRACT(EPOCH FROM (end_time - start_time));
@@ -48,8 +47,5 @@ BEGIN
     RAISE NOTICE 'Total Time: % ms', total_time * 1000;
     RAISE NOTICE 'Average Time: % ms', average_time * 1000;
     RAISE NOTICE 'Variance: %', variance;
-
-    -- clear
-    DROP TABLE test;
     
 END $$;

@@ -1,15 +1,15 @@
-William_Shakespeare
-Shall_I_compare_thee_to_a_summer's_day?
-Thou_art_more_lovely_and_more_temperate:
-Rough_winds_do_shake_the_darling_buds_of_May,
-And_summer's_lease_hath_all_too_short_a_date;
-Sometime_too_hot_the_eye_of_heaven_shines,
-And_often_is_his_gold_complexion_dimmed,
-And_every_fair_from_fair_sometime_declines,
-By_chance,_or_nature's_changing_course_untrimmed:
-But_thy_eternal_summer_shall_not_fade,
-Nor_lose_possession_of_that_fair_thou_ow'st;
-Nor_shall_Death_brag_thou_wand'rest_in_his_shade,
-When_in_eternal_lines_to_time_thou_grow'st.
-So_long_as_men_can_breathe,_or_eyes_can_see,
-So_long_lives_this,_and_this_gives_life_to_thee.
+William Shakespeare
+Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate:
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date;
+Sometime too hot the eye of heaven shines,
+And often is his gold complexion dimmed,
+And every fair from fair sometime declines,
+By chance, or nature's changing course untrimmed:
+But thy eternal summer shall not fade,
+Nor lose possession of that fair thou ow'st;
+Nor shall Death brag thou wand'rest in his shade,
+When in eternal lines to time thou grow'st.
+So long as men can breathe, or eyes can see,
+So long lives this, and this gives life to thee.
