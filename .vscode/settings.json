@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "pg_lzcompress.h": "c",
+        "tadoc_compress.h": "c"
+    }
+}

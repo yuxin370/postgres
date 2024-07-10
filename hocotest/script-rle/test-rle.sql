@@ -22,6 +22,13 @@ exp_date DATE NOT NULL,
 seq_data TEXT STORAGE External,
 quality_score DECIMAL(5,2));
 
+
+insert into dna_seq values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2),95.5); 
+insert into baseline values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 
+insert into baseline_plain values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 
+
+SELECT * FROM dna_seq;
+
 -- insert into dna_seq values(1,'2023-03-25', hoco_rle(repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200)),95.5); 
 -- insert into baseline values(1,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 
 -- insert into baseline_plain values(1,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 

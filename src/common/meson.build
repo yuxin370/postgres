@@ -38,6 +38,8 @@ common_sources = files(
   'username.c',
   'wait_error.c',
   'wchar.c',
+  'rle_compress.c',
+  'tadoc_compress.c',
 )
 
 if ssl.found()

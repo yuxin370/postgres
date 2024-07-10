@@ -64,12 +64,13 @@ toast_compress_datum(Datum value, char cmethod)
 	switch (cmethod)
 	{
 		/** hocotext*/
+		/** yuxin tang*/
 		case TOAST_RLE_COMPRESSION:
-			tmp = pglz_compress_datum((const struct varlena *) value);
+			tmp = rle_compress_datum((const struct varlena *) value);
 			cmid = TOAST_RLE_COMPRESSION_ID;
 			break;
 		case TOAST_TADOC_COMPRESSION:
-			tmp = pglz_compress_datum((const struct varlena *) value);
+			tmp = tadoc_compress_datum((const struct varlena *) value);
 			cmid = TOAST_TADOC_COMPRESSION_ID;
 			break;
 		case TOAST_PGLZ_COMPRESSION:
