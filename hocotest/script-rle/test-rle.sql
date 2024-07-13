@@ -7,9 +7,13 @@ CREATE EXTENSION hocotext;
 
 CREATE TABLE dna_seq(seq_id SERIAL PRIMARY KEY,
 exp_date DATE NOT NULL,
-seq_data TEXT COMPRESSION RLE,
+seq_data HOCOTEXT COMPRESSION RLE,
 quality_score DECIMAL(5,2));
 
+CREATE TABLE dna_seq_1(seq_id SERIAL PRIMARY KEY,
+exp_date DATE NOT NULL,
+seq_data HOCOTEXT COMPRESSION RLE,
+quality_score DECIMAL(5,2));
 
 CREATE TABLE baseline(seq_id SERIAL PRIMARY KEY,
 exp_date DATE NOT NULL,
@@ -23,9 +27,14 @@ seq_data TEXT STORAGE External,
 quality_score DECIMAL(5,2));
 
 
-insert into dna_seq values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2),95.5); 
-insert into baseline values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 
-insert into baseline_plain values(2,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',200),95.5); 
+insert into dna_seq values(1,'2023-03-25', (repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2)),95.5); 
+insert into dna_seq_1 values(1,'2023-03-25', hoco_rle(repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2)),95.5); 
+insert into baseline values(1,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2),95.5); 
+insert into baseline_plain values(1,'2023-03-25', repeat('aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbabcdefghigk',2),95.5); 
+
+explain analyze select seq_id from dna_seq where seq_data LIKE '%babc%k';
+explain analyze select seq_id from baseline where seq_data LIKE '%babc%k';
+explain analyze select seq_id from baseline_plain where seq_data LIKE '%babc%k';
 
 SELECT * FROM dna_seq;
 

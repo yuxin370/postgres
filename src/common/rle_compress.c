@@ -196,11 +196,10 @@ int32 rle_compress(const char *source, int32 slen, char *dest,
 	char * sp = source; //uncompressed data
     char * srcend = source + slen;//end of uncompressed data
 
-    text *result = (text *)palloc(VARSIZE_ANY_EXHDR(source) + VARHDRSZ); 
 	char *dp = (unsigned char *) dest;           //compressed data
 
     int32 rawsize = slen;
-    // buf_put_int(dp, rawsize | 0x40000000);     // record rawsize
+    buf_put_int(dp, rawsize | 0x40000000);     // record rawsize
 
     /**
      * Our fallback strategy is default.
@@ -235,7 +234,7 @@ int32 rle_compress(const char *source, int32 slen, char *dest,
     result_size = rle_compress_ctrl(sp,srcend,dp);
 
     if(result_size >= result_max) return -1;
-    return result_size;
+    return result_size + 1; // 1 for header 
 }
 
 /**
@@ -261,13 +260,17 @@ rle_decompress(const char *source, int32 slen, char *dest,
     int32 repeat_count;
     int32 single_count;
     char cur_data;
+	int32 rawsize_read = buf_get_int(sp) & 0x3fffffff;
 
     sp = (const unsigned char *) source;
 	srcend = ((const unsigned char *) source) + slen;
 	dp = (unsigned char *) dest;
 	destend = dp + rawsize;
 
-    // int32 rawsize = buf_get_int(sp) & 0x3fffffff;
+    if(rawsize != rawsize_read){
+		// ereport(ERROR,(errmsg("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read)));
+		pg_printf("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read);
+	}
 
     int count = 0;
 	while (sp < srcend)

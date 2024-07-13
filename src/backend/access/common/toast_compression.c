@@ -201,7 +201,7 @@ rle_compress_datum(const struct varlena *value)
  * Decompress a varlena that was compressed using RLE.
  */
 struct varlena *
-rle_decompress_datum(const struct varlena *value)
+rle_decompress_datum(const struct varlena *value,bool partialDecomp)
 {
 	struct varlena *result;
 	char * inter_res;
@@ -209,25 +209,28 @@ rle_decompress_datum(const struct varlena *value)
 
 	/* allocate memory for the uncompressed data */
 	result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
-	inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
+	if(!partialDecomp){
+		inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
 
-	/* decompress the data */
-	rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
-							  VARSIZE(value) - VARHDRSZ_COMPRESSED,
-							  inter_res,
-							  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+		/* decompress the data */
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								inter_res,
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
 
 
-	/* decompress the data */
-	rawsize = rle_decompress(inter_res,
-							  rawsize,
-							  VARDATA(result),
-							  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+		/* decompress the data */
+		rawsize = rle_decompress(inter_res,
+								rawsize,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+	}else{
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+	}
 
-	// rawsize = rle_decompress((char *) value + VARHDRSZ_COMPRESSED,
-	// 						  VARSIZE(value) - VARHDRSZ_COMPRESSED,
-	// 						  VARDATA(result),
-	// 						  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
 	if (rawsize < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DATA_CORRUPTED),
@@ -323,12 +326,10 @@ tadoc_compress_datum(const struct varlena *value)
 						valsize,
 						(char *) inter_res,
 						NULL);
-	ereport(LOG,(errmsg("rle_compress finished. compressed size = %d.",len)));
 	len = pglz_compress(inter_res,
 						len,
 						(char *) tmp + VARHDRSZ_COMPRESSED,
 						NULL);
-	ereport(LOG,(errmsg("pglz_compress finished. compressed size = %d.",len)));
 
 	// len = rle_compress(VARDATA_ANY(value),
 	// 					valsize,
@@ -354,7 +355,7 @@ tadoc_compress_datum(const struct varlena *value)
  * Decompress a varlena that was compressed using TADOC.
  */
 struct varlena *
-tadoc_decompress_datum(const struct varlena *value)
+tadoc_decompress_datum(const struct varlena *value,bool partialDecomp)
 {
 	struct varlena *result;
 	char * inter_res;
@@ -362,25 +363,34 @@ tadoc_decompress_datum(const struct varlena *value)
 
 	/* allocate memory for the uncompressed data */
 	result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
-	inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
+	if(!partialDecomp){
+		inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
 
-	/* decompress the data */
-	rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
-							  VARSIZE(value) - VARHDRSZ_COMPRESSED,
-							  inter_res,
-							  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+		/* decompress the data */
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								inter_res,
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
 
 
-	/* decompress the data */
-	rawsize = rle_decompress(inter_res,
-							  rawsize,
-							  VARDATA(result),
-							  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+		/* decompress the data */
+		rawsize = rle_decompress(inter_res,
+								rawsize,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+	}else{
+		/* decompress the data */
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
 
-	// rawsize = rle_decompress((char *) value + VARHDRSZ_COMPRESSED,
-	// 						  VARSIZE(value) - VARHDRSZ_COMPRESSED,
-	// 						  VARDATA(result),
-	// 						  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+		// rawsize = rle_decompress((char *) value + VARHDRSZ_COMPRESSED,
+		// 						  VARSIZE(value) - VARHDRSZ_COMPRESSED,
+		// 						  VARDATA(result),
+		// 						  VARDATA_COMPRESSED_GET_EXTSIZE(value), true);
+	}
+
 	if (rawsize < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DATA_CORRUPTED),

@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "pg_lzcompress.h": "c",
-        "tadoc_compress.h": "c"
+        "tadoc_compress.h": "c",
+        "bloomfilter.h": "c",
+        "hocotext.h": "c",
+        "rle_compress.h": "c",
+        "rel.h": "c"
     }
 }

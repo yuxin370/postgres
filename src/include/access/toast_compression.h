@@ -61,14 +61,14 @@ typedef enum ToastCompressionId
 /* rle compression/decompression routines */
 /** yuxin tang*/
 extern struct varlena *rle_compress_datum(const struct varlena *value);
-extern struct varlena *rle_decompress_datum(const struct varlena *value);
+extern struct varlena *rle_decompress_datum(const struct varlena *value,bool partialDecomp);
 extern struct varlena *rle_decompress_datum_slice(const struct varlena *value,
 												   int32 slicelength);
 
 /* tadoc compression/decompression routines */
 /** yuxin tang*/
 extern struct varlena *tadoc_compress_datum(const struct varlena *value);
-extern struct varlena *tadoc_decompress_datum(const struct varlena *value);
+extern struct varlena *tadoc_decompress_datum(const struct varlena *value,bool partialDecomp);
 extern struct varlena *tadoc_decompress_datum_slice(const struct varlena *value,
 												   int32 slicelength);
 

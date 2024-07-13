@@ -4,6 +4,7 @@
 #include "hocotext.h"
 
 
+
 #define buf_rle_value(__sp,__dp,__count,__sp_ctrlable)  \
 do{ \
     if(__sp_ctrlable){                                  \
@@ -44,9 +45,7 @@ do { \
 
 
 int32 
-hocotext_rle_hoco_cmp(struct varlena * left, 
-                    struct varlena * right, 
-                    Oid collid)
+hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right)
 {
 
     unsigned char *lefp;
@@ -59,19 +58,6 @@ hocotext_rle_hoco_cmp(struct varlena * left,
     unsigned char *cur_righ_p = cur_righ;
     int32 lef_count = 0;
     int32 righ_count = 0;
-
-	if (!OidIsValid(collid))
-	{
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR,
-				(errcode(ERRCODE_INDETERMINATE_COLLATION),
-				 errmsg("could not determine which collation to use for %s function",
-						"hocotext_rle_cmp()"),
-				 errhint("Use the COLLATE clause to set the collation explicitly.")));
-	}
 
     lefp = VARDATA_ANY(left);
     righp = VARDATA_ANY(right);
@@ -196,8 +182,7 @@ hocotext_rle_hoco_cmp(struct varlena * left,
 text * 
 hocotext_rle_hoco_extract(struct varlena * source,
                         int32 offset,
-                        int32 len,
-                        Oid collid){
+                        int32 len){
 	unsigned char *dp;
 	unsigned char *destend;
     int32 cur_offset = 0; //offset in raw text
@@ -217,18 +202,6 @@ hocotext_rle_hoco_extract(struct varlena * source,
         len = 0;
     }
     // int32 source_len = 0;
-	if (!OidIsValid(collid))
-	{
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR,
-				(errcode(ERRCODE_INDETERMINATE_COLLATION),
-				 errmsg("could not determine which collation to use for %s function",
-						"hocotext_rle_extract()"),
-				 errhint("Use the COLLATE clause to set the collation explicitly.")));
-	}
 
     if(rawsize < offset){
         offset = rawsize;
@@ -292,7 +265,7 @@ hocotext_rle_hoco_extract(struct varlena * source,
 text * 
 hocotext_rle_hoco_insert(struct varlena * source,
                         int32 offset,
-                        text *str,Oid collid){
+                        text *str){
 
     unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
@@ -304,18 +277,6 @@ hocotext_rle_hoco_insert(struct varlena * source,
     if((--offset) < 0){
         offset = 0;
     }
-	if (!OidIsValid(collid))
-	{
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR,
-				(errcode(ERRCODE_INDETERMINATE_COLLATION),
-				 errmsg("could not determine which collation to use for %s function",
-						"hocotext_rle_extract()"),
-				 errhint("Use the COLLATE clause to set the collation explicitly.")));
-	}
 
     if(rawsize < offset){
         offset = rawsize;
@@ -464,7 +425,7 @@ hocotext_rle_hoco_insert(struct varlena * source,
 text * 
 hocotext_rle_hoco_delete(struct varlena * source,
                         int32 offset,
-                        int32 len,Oid collid){
+                        int32 len){
     unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
     int32 rawsize = buf_get_int(sp) & 0x3fffffff;
@@ -487,18 +448,6 @@ hocotext_rle_hoco_delete(struct varlena * source,
     }
     if(len < 0) len = 0;
     // int32 source_len = 0;
-	if (!OidIsValid(collid))
-	{
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR,
-				(errcode(ERRCODE_INDETERMINATE_COLLATION),
-				 errmsg("could not determine which collation to use for %s function",
-						"hocotext_rle_extract()"),
-				 errhint("Use the COLLATE clause to set the collation explicitly.")));
-	}
 
     if(rawsize < offset){
         offset = rawsize;
@@ -610,7 +559,7 @@ hocotext_rle_hoco_delete(struct varlena * source,
 }
 
 text * 
-hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid){
+hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str){
 unsigned char * sp = VARDATA_ANY(source);
     unsigned char * srcend = sp + VARSIZE_ANY_EXHDR(source);
     int32 rawsize = buf_get_int(sp) & 0x3fffffff;
@@ -624,18 +573,6 @@ unsigned char * sp = VARDATA_ANY(source);
     }
     if(len < 0) len = 0;
     // int32 source_len = 0;
-	if (!OidIsValid(collid))
-	{
-		/*
-		 * This typically means that the parser could not resolve a conflict
-		 * of implicit collations, so report it that way.
-		 */
-		ereport(ERROR,
-				(errcode(ERRCODE_INDETERMINATE_COLLATION),
-				 errmsg("could not determine which collation to use for %s function",
-						"hocotext_rle_extract()"),
-				 errhint("Use the COLLATE clause to set the collation explicitly.")));
-	}
 
     if(rawsize < offset){
         offset = rawsize;
@@ -807,30 +744,6 @@ hocotext_rle_hoco_concat(struct varlena *left,struct varlena *right,Oid collid){
     int32 right_comp_size = VARSIZE_ANY_EXHDR(right) - 4;
     int32 left_rawsize = buf_get_int(left_sp) & 0x3fffffff;
     int32 right_rawsize = buf_get_int(right_sp) & 0x3fffffff;
-    
-
-    // printf("in hocotext_rle_hoco_concat function![source:%x  start:%x] left = %s size = %d \n",left,left_sp,left_sp,left_rawsize);
-    // unsigned char * start = left;
-    // int size =VARSIZE_ANY_EXHDR(left);
-    // unsigned char * dd = left_sp + size;
-    // while(start <= dd){
-    //     printf("%x :",start);
-    //     printChar(*start);
-    //     start++;
-    // }
-    // printf("\n");
-
-    // printf("in hocotext_rle_hoco_concat function![source:%x  start:%x] right = %s size = %d \n",right,right_sp,right_sp,right_rawsize);
-    // start = right;
-    // size =VARSIZE_ANY_EXHDR(right);
-    // dd = right_sp + size ;
-    // while(start <= dd){
-    //     printf("%x :",start);
-    //     printChar(*start);
-    //     start++;
-    // }
-    // printf("\n");
-
 
 	if (!OidIsValid(collid))
 	{
@@ -861,4 +774,255 @@ hocotext_rle_hoco_concat(struct varlena *left,struct varlena *right,Oid collid){
     *dp = '\0';
     SET_VARSIZE(result,dp -  dstart + VARHDRSZ);
     return result;
+}
+
+struct rle_pattern{
+    bool is_rle;
+    int32 idx;
+    int32 len;
+    char *buf;
+};
+struct rle_pattern cur_pattern;
+
+char get_char_from_pattern(struct rle_pattern cp){
+    cp.idx ++;
+    if(cp.is_rle){
+        return cp.buf[0];
+    }else{
+        return cp.buf[cp.idx-1];
+    }
+}
+
+#define LIKE_TRUE						1
+#define LIKE_FALSE						0
+#define LIKE_ABORT						(-1)
+#define NextByte(p, plen)	((p)++, (plen)--)
+#define GETCHAR(t) (t)
+
+
+
+void print_cur_pattern(){
+    if(cur_pattern.is_rle){
+        printf("cur pattern type is rle, len = %d , buf = %s idx = %d \n",cur_pattern.len,cur_pattern.buf,cur_pattern.idx);
+    }else{
+        printf("cur pattern type is not rle, len = %d , buf = %s idx = %d \n",cur_pattern.len,cur_pattern.buf,cur_pattern.idx);
+    }
+}
+
+#define next_pattern(p, plen) \
+    int32 type = (int32)(((*p) >> 7) & 1); \
+    int32 count = type == 1 ? (int32)((*p) & 0x7f) + THRESHOLD : (int32)((*p) & 0x7f);\
+    if(type == 1){                      \
+        cur_pattern.is_rle = true;      \
+        cur_pattern.idx = 0;            \
+        cur_pattern.len = count;        \
+        memcpy(cur_pattern.buf,p+1,1);  \
+        cur_pattern.buf[1]='\0';        \
+        p += 2;                         \
+        plen -= 2;                      \
+    }else{                              \
+        cur_pattern.is_rle = false;     \
+        cur_pattern.idx = 0;            \
+        cur_pattern.len = count;        \
+        memcpy(cur_pattern.buf,p+1,count);  \
+        cur_pattern.buf[count]='\0';            \
+        p += count + 1;                     \
+        plen -= count + 1;                  \
+    }   \
+    // print_cur_pattern()      
+
+
+#define NextChar(p, plen)  \
+    if(cur_pattern.idx + 1 == cur_pattern.len){ \
+        next_pattern(p,plen);      \
+    }else{ \
+        cur_pattern.idx++;         \        
+    }
+
+int32 match_text(const char *s, int slen, const char *p, int plen){
+	/* Fast path for match-everything pattern */
+    if(plen == 1 && *p == '%'){
+		return LIKE_TRUE;
+    }
+
+
+	/* Since this function recurses, it could be driven to stack overflow */
+	check_stack_depth();
+
+	/*
+	 * In this loop, we advance by char when matching wildcards (and thus on
+	 * recursive entry to this function we are properly char-synced). On other
+	 * occasions it is safe to advance by byte, as the text and pattern will
+	 * be in lockstep. This allows us to perform all comparisons between the
+	 * text and pattern on a byte by byte basis, even for multi-byte
+	 * encodings.
+	 */
+	while ((slen > 0 || (slen == 0 && cur_pattern.idx!=cur_pattern.len)) && plen > 0)
+	{
+		if (*p == '\\')
+		{
+            // printf(" match \\ , s = %s slen = %d p = %s plen = %d\n",s,slen,p,plen);
+			/* Next pattern byte must match literally, whatever it is */
+			NextByte(p, plen);
+			/* ... and there had better be one, per SQL standard */
+			if (plen <= 0)
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_ESCAPE_SEQUENCE),
+						 errmsg("LIKE pattern must not end with escape character")));
+            if (GETCHAR(*p) != get_char_from_pattern(cur_pattern))
+				return LIKE_FALSE;
+		}else if (*p == '%'){
+            // printf(" match %% , s = %s slen = %d p = %s plen = %d\n",s,slen,p,plen);
+			char		firstpat;
+
+			/*
+			 * % processing is essentially a search for a text position at
+			 * which the remainder of the text matches the remainder of the
+			 * pattern, using a recursive call to check each potential match.
+			 *
+			 * If there are wildcards immediately following the %, we can skip
+			 * over them first, using the idea that any sequence of N _'s and
+			 * one or more %'s is equivalent to N _'s and one % (ie, it will
+			 * match any sequence of at least N text characters).  In this way
+			 * we will always run the recursive search loop using a pattern
+			 * fragment that begins with a literal character-to-match, thereby
+			 * not recursing more than we have to.
+			 */
+			NextByte(p, plen);
+            // printf(" match %% nextByte , s = %s slen = %d p = %s plen = %d\n",s,slen,p,plen);
+
+			while (plen > 0)
+			{
+				if (*p == '%')
+					NextByte(p, plen);
+				else if (*p == '_')
+				{
+					/* If not enough text left to match the pattern, ABORT */
+					if (slen <= 0)
+						return LIKE_ABORT;
+					NextChar(s, slen);
+					NextByte(p, plen);
+				}
+				else
+					break;		/* Reached a non-wildcard pattern char */
+			}
+
+			/*
+			 * If we're at end of pattern, match: we have a trailing % which
+			 * matches any remaining text string.
+			 */
+			if (plen <= 0)
+				return LIKE_TRUE;
+
+			/*
+			 * Otherwise, scan for a text position at which we can match the
+			 * rest of the pattern.  The first remaining pattern char is known
+			 * to be a regular or escaped literal character, so we can compare
+			 * the first pattern byte to each text byte to avoid recursing
+			 * more than we have to.  This fact also guarantees that we don't
+			 * have to consider a match to the zero-length substring at the
+			 * end of the text.
+			 */
+			if (*p == '\\')
+			{
+				if (plen < 2)
+					ereport(ERROR,
+							(errcode(ERRCODE_INVALID_ESCAPE_SEQUENCE),
+							 errmsg("LIKE pattern must not end with escape character")));
+				firstpat = GETCHAR(p[1]);
+			}
+			else
+				firstpat = GETCHAR(*p);
+
+			while (slen > 0 || (slen == 0 && cur_pattern.idx!=cur_pattern.len))
+			{
+                // printf("slen = %d   cur_pattern.idx = %d get_char_from_pattern(cur_pattern) = %c and  firstpat = %c\n",slen , cur_pattern.idx,get_char_from_pattern(cur_pattern),firstpat);
+				struct rle_pattern tmp_pattern = cur_pattern;
+                int			matched = 3;
+                if (get_char_from_pattern(cur_pattern) == firstpat)
+				{
+					matched = match_text(s, slen, p, plen);
+					if (matched != LIKE_FALSE)
+						return matched; /* TRUE or ABORT */
+				}
+                cur_pattern = tmp_pattern;
+                if(cur_pattern.is_rle && matched == 3){
+                    next_pattern(s,slen);
+                }else{
+                    // 可以尝试批量跳过
+                    NextChar(s,slen);
+                }
+			}
+
+			/*
+			 * End of text with no match, so no point in trying later places
+			 * to start matching this pattern.
+			 */
+			return false;
+		}else if (*p == '_'){
+			/* _ matches any single character, and we know there is one */
+            // printf(" match _ , s = %s slen = %d p = %s plen = %d\n",s,slen,p,plen);
+			NextChar(s, slen);
+			NextByte(p, plen);
+			continue;
+		}else if (GETCHAR(*p) != get_char_from_pattern(cur_pattern)){
+
+			/* non-wildcard pattern char fails to match text char */
+			    return LIKE_FALSE;
+		}
+
+		/*
+		 * Pattern and text match, so advance.
+		 *
+		 * It is safe to use NextByte instead of NextChar here, even for
+		 * multi-byte character sets, because we are not following immediately
+		 * after a wildcard character. If we are in the middle of a multibyte
+		 * character, we must already have matched at least one byte of the
+		 * character from both text and pattern; so we cannot get out-of-sync
+		 * on character boundaries.  And we know that no backend-legal
+		 * encoding allows ASCII characters such as '%' to appear as non-first
+		 * bytes of characters, so we won't mistakenly detect a new wildcard.
+		 */
+		NextByte(p, plen);
+        NextChar(s,slen);
+	}
+
+	if (slen > 0 || (slen == 0 && cur_pattern.idx!=cur_pattern.len))
+		return LIKE_FALSE;		/* end of pattern, but not of text */
+
+	/*
+	 * End of text, but perhaps not of pattern.  Match iff the remaining
+	 * pattern can match a zero-length string, ie, it's zero or more %'s.
+	 */
+	while (plen > 0 && *p == '%')
+		NextByte(p, plen);
+	if (plen <= 0)
+		return LIKE_TRUE;
+
+	/*
+	 * End of text with no match, so no point in trying later places to start
+	 * matching this pattern.
+	 */
+	return LIKE_ABORT;
+}
+
+bool hocotext_rle_hoco_like(text *str, text *pat){
+	char	   *s,*p;
+	int			slen,plen;
+    int32 left_rawsize;
+
+	p = VARDATA_ANY(pat);
+	plen = VARSIZE_ANY_EXHDR(pat);
+	s = VARDATA_ANY(str);
+	slen = VARSIZE_ANY_EXHDR(str) - 4;
+    left_rawsize = buf_get_int(s) & 0x3fffffff;
+
+    // initialize cur_pattern
+    cur_pattern.buf = (char *)palloc(30);
+    cur_pattern.len = 0;
+    cur_pattern.idx = 0;
+    cur_pattern.is_rle = true;
+    next_pattern(s,slen);
+
+    return match_text(s,slen,p,plen) == LIKE_TRUE;
 }

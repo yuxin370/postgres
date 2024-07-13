@@ -1869,6 +1869,15 @@ pg_detoast_datum_packed(struct varlena *datum)
 		return datum;
 }
 
+struct varlena *
+pg_detoast_datum_packed_partial(struct varlena *datum)
+{
+	if (VARATT_IS_COMPRESSED(datum) || VARATT_IS_EXTERNAL(datum))
+		return detoast_attr_partial(datum);
+	else
+		return datum;
+}
+
 /*-------------------------------------------------------------------------
  *		Support routines for extracting info from fn_expr parse tree
  *

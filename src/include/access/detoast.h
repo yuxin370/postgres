@@ -51,6 +51,7 @@ extern struct varlena *detoast_external_attr(struct varlena *attr);
  * ----------
  */
 extern struct varlena *detoast_attr(struct varlena *attr);
+extern struct varlena *detoast_attr_partial(struct varlena *attr);
 
 /* ----------
  * detoast_attr_slice() -

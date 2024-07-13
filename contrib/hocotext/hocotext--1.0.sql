@@ -147,6 +147,11 @@ RETURNS text
 AS 'MODULE_PATHNAME','hocotext_decompress_rle'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION "hoco_de_rle"( text )
+RETURNS text
+AS 'MODULE_PATHNAME','hocotext_decompress_rle'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 CREATE FUNCTION "hoco_tadoc"( text )
 RETURNS hocotext
 AS 'MODULE_PATHNAME','hocotext_compress_tadoc'
@@ -283,9 +288,14 @@ CREATE AGGREGATE max(hocotext)  (
 
 -- [TO BE CHECK CORRECTNESS] pattern matching
 
-CREATE FUNCTION textlike(hocotext, hocotext)
-RETURNS bool AS 'textlike'
-LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
+CREATE FUNCTION "textlike"(hocotext, hocotext)
+RETURNS bool 
+AS 'MODULE_PATHNAME','hocotext_like'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+--CREATE FUNCTION textlike(hocotext, hocotext)
+--RETURNS bool AS 'textlike'
+--LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION textnlike(hocotext, hocotext)
 RETURNS bool AS 'textnlike'
@@ -366,98 +376,6 @@ CREATE OPERATOR !~~* (
     PROCEDURE = textnlike,
     LEFTARG   = hocotext,
     RIGHTARG  = hocotext,
-    NEGATOR   = ~~*,
-    RESTRICT  = nlikesel,
-    JOIN      = nlikejoinsel
-);
-
---
--- Matching hocotext to text.
---
-
-CREATE FUNCTION textlike(hocotext, text)
-RETURNS bool AS 'textlike'
-LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
-
-CREATE FUNCTION textnlike(hocotext, text)
-RETURNS bool AS 'textnlike'
-LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
-
-CREATE FUNCTION textregexeq(hocotext, text)
-RETURNS bool AS 'textregexeq'
-LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
-
-CREATE FUNCTION textregexne(hocotext, text)
-RETURNS bool AS 'textregexne'
-LANGUAGE internal IMMUTABLE STRICT PARALLEL SAFE;
-
-CREATE OPERATOR ~ (
-    PROCEDURE = textregexeq,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = !~,
-    RESTRICT  = regexeqsel,
-    JOIN      = regexeqjoinsel
-);
-
-CREATE OPERATOR ~* (
-    PROCEDURE = textregexeq,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = !~*,
-    RESTRICT  = regexeqsel,
-    JOIN      = regexeqjoinsel
-);
-
-CREATE OPERATOR !~ (
-    PROCEDURE = textregexne,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = ~,
-    RESTRICT  = regexnesel,
-    JOIN      = regexnejoinsel
-);
-
-CREATE OPERATOR !~* (
-    PROCEDURE = textregexne,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = ~*,
-    RESTRICT  = regexnesel,
-    JOIN      = regexnejoinsel
-);
-
-CREATE OPERATOR ~~ (
-    PROCEDURE = textlike,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = !~~,
-    RESTRICT  = likesel,
-    JOIN      = likejoinsel
-);
-
-CREATE OPERATOR ~~* (
-    PROCEDURE = textlike,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = !~~*,
-    RESTRICT  = likesel,
-    JOIN      = likejoinsel
-);
-
-CREATE OPERATOR !~~ (
-    PROCEDURE = textnlike,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
-    NEGATOR   = ~~,
-    RESTRICT  = nlikesel,
-    JOIN      = nlikejoinsel
-);
-
-CREATE OPERATOR !~~* (
-    PROCEDURE = textnlike,
-    LEFTARG   = hocotext,
-    RIGHTARG  = text,
     NEGATOR   = ~~*,
     RESTRICT  = nlikesel,
     JOIN      = nlikejoinsel

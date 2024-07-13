@@ -27,12 +27,24 @@ PG_MODULE_MAGIC;
 int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oid collid){
     char leftTag = (((unsigned char)(*VARDATA_ANY(left)))>>6) & 0x03;
     char rightTag = (((unsigned char)(*VARDATA_ANY(right)))>>6) & 0x03;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_cmp()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     Assert(leftTag == rightTag);
     switch (leftTag){
         case 0x00:
             // return hocotext_common_cmp(left,right,collid);
         case 0x01:
-            return hocotext_rle_hoco_cmp(left,right,collid);
+            return hocotext_rle_hoco_cmp(left,right);
         case 0x02:
             // return hocotext_tadoc_hoco_cmp(left,right,collid);
         case 0x03:
@@ -46,11 +58,23 @@ int32 hocotext_hoco_cmp_helper(struct varlena * left, struct varlena * right, Oi
 
 text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 len,Oid collid){
     char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_extract()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     switch (tag){
         case 0x00:
             // return hocotext_common_extract(source,offset,len,collid);
         case 0x01:
-            return hocotext_rle_hoco_extract(source,offset,len,collid);
+            return hocotext_rle_hoco_extract(source,offset,len);
         case 0x02:
             // return hocotext_tadoc_hoco_extract(source,offset,len,collid);
         case 0x03:
@@ -64,11 +88,23 @@ text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,int32 l
 
 text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * str,Oid collid){
     char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_insert()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     switch (tag){
         case 0x00:
             // return hocotext_common_insert(source,offset,len,collid);
         case 0x01:
-            return hocotext_rle_hoco_insert(source,offset,str,collid);
+            return hocotext_rle_hoco_insert(source,offset,str);
         case 0x02:
             // return hocotext_tadoc_hoco_insert(source,offset,str,collid);
         case 0x03:
@@ -81,11 +117,23 @@ text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * s
 
 text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 len,text * str,Oid collid){
     char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_overlay()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     switch (tag){
         case 0x00:
             // return hocotext_common_overlay(source,offset,len,collid);
         case 0x01:
-            return hocotext_rle_hoco_overlay(source,offset,len,str,collid);
+            return hocotext_rle_hoco_overlay(source,offset,len,str);
         case 0x02:
             // return hocotext_tadoc_hoco_overlay(source,offset,str,collid);
         case 0x03:
@@ -97,12 +145,53 @@ text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 l
 }
 
 text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid){
+	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_delete()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     char tag = (((unsigned char)(*VARDATA_ANY(source))) >> 6) & 0x03;
+    switch (tag){
+        case 0x00:
+            // return hocotext_common_delete(source,offset,len);
+        case 0x01:
+            return hocotext_rle_hoco_delete(source,offset,len);
+        case 0x02:
+            // return hocotext_tadoc_hoco_delete(source,offset,len);
+        case 0x03:
+            // return hocotext_???_hoco_delete(source,offset,len);
+        default:
+            ereport(ERROR,
+                    errmsg("Unrecognizable compresssion code: %d",tag));
+    }
+}
+
+bool hocotext_hoco_like_helper(text * str,text * pat,Oid collid){
+    char tag = (((unsigned char)(*VARDATA_ANY(str))) >> 6) & 0x03;
+    	if (!OidIsValid(collid))
+	{
+		/*
+		 * This typically means that the parser could not resolve a conflict
+		 * of implicit collations, so report it that way.
+		 */
+		ereport(ERROR,
+				(errcode(ERRCODE_INDETERMINATE_COLLATION),
+				 errmsg("could not determine which collation to use for %s function",
+						"hocotext_delete()"),
+				 errhint("Use the COLLATE clause to set the collation explicitly.")));
+	}
     switch (tag){
         case 0x00:
             // return hocotext_common_delete(source,offset,len,collid);
         case 0x01:
-            return hocotext_rle_hoco_delete(source,offset,len,collid);
+            return hocotext_rle_hoco_like(str,pat);
         case 0x02:
             // return hocotext_tadoc_hoco_delete(source,offset,len,collid);
         case 0x03:
@@ -220,6 +309,7 @@ PG_FUNCTION_INFO_V1(hocotext_overlay);
 PG_FUNCTION_INFO_V1(hocotext_char_length);
 PG_FUNCTION_INFO_V1(hocotext_concat);
 PG_FUNCTION_INFO_V1(hocotext_delete);
+PG_FUNCTION_INFO_V1(hocotext_like);
 
 
 /**
@@ -320,8 +410,8 @@ hocotext_decompress_tadoc(PG_FUNCTION_ARGS) {
 
 Datum
 hocotext_eq(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) == 0);
@@ -334,8 +424,8 @@ hocotext_eq(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_nq(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) != 0);
@@ -348,8 +438,8 @@ hocotext_nq(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_lt(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) < 0);
@@ -362,8 +452,8 @@ hocotext_lt(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_le(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) < 0);
@@ -376,8 +466,8 @@ hocotext_le(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_gt(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) > 0);
@@ -390,8 +480,8 @@ hocotext_gt(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_ge(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     bool result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) >= 0);
@@ -404,7 +494,7 @@ hocotext_ge(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_substring(PG_FUNCTION_ARGS){
-    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    struct varlena *source = PG_GETARG_TEXT_PP_PARTIAL(0);
     int32 offset = PG_GETARG_INT32(1);
     int32 len = PG_GETARG_INT32(2);
     text *result = NULL;
@@ -424,7 +514,7 @@ hocotext_substring(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_insert(PG_FUNCTION_ARGS){
-    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    struct varlena *source = PG_GETARG_TEXT_PP_PARTIAL(0);
     int32 offset = PG_GETARG_INT32(1);
     text *str = PG_GETARG_TEXT_P(2);
     text *result = NULL;
@@ -439,7 +529,7 @@ hocotext_insert(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_overlay(PG_FUNCTION_ARGS){
-    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    struct varlena *source = PG_GETARG_TEXT_PP_PARTIAL(0);
     int32 offset = PG_GETARG_INT32(1);
     int32 len = PG_GETARG_INT32(2);
     text *str = PG_GETARG_TEXT_P(3);
@@ -455,8 +545,8 @@ hocotext_overlay(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_concat(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     text * result;
 
     result = hocotext_rle_hoco_concat(left,right,PG_GET_COLLATION());
@@ -469,7 +559,7 @@ hocotext_concat(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_char_length(PG_FUNCTION_ARGS){
-    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    struct varlena *source = PG_GETARG_TEXT_PP_PARTIAL(0);
     int32 result;
 
     result = hocotext_rle_hoco_char_length(source,PG_GET_COLLATION());
@@ -481,7 +571,7 @@ hocotext_char_length(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_delete(PG_FUNCTION_ARGS){
-    struct varlena *source = PG_GETARG_TEXT_PP(0);
+    struct varlena *source = PG_GETARG_TEXT_PP_PARTIAL(0);
     int32 offset = PG_GETARG_INT32(1);
     int32 len = PG_GETARG_INT32(2);
     text *result = NULL;
@@ -494,8 +584,35 @@ hocotext_delete(PG_FUNCTION_ARGS){
    PG_RETURN_TEXT_P(result);
 }
 
+Datum
+hocotext_like(PG_FUNCTION_ARGS){
+	text	   *str = PG_GETARG_TEXT_PP_PARTIAL(0);
+	text	   *pat = PG_GETARG_TEXT_PP(1);
+    bool result = false;
+    
+    result = hocotext_hoco_like_helper(str,pat,PG_GET_COLLATION());
 
 
+   PG_FREE_IF_COPY(str,0);
+   PG_FREE_IF_COPY(pat,1);
+
+   PG_RETURN_BOOL(result);
+}
+
+// Datum
+// hocotext_nlike(PG_FUNCTION_ARGS){
+// 	text	   *str = PG_GETARG_TEXT_PP(0);
+// 	text	   *pat = PG_GETARG_TEXT_PP(1);
+//     bool *result = false;
+
+//     result = hocotext_hoco_nlike_helper(str,pat,PG_GET_COLLATION()) != true;
+
+
+//    PG_FREE_IF_COPY(str,0);
+//    PG_FREE_IF_COPY(pat,1);
+
+//    PG_RETURN_BOOL(result);
+// }
 
 /**
  * *************************************
@@ -505,8 +622,8 @@ hocotext_delete(PG_FUNCTION_ARGS){
 
 Datum
 hocotext_smaller(PG_FUNCTION_ARGS){
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     text *result;
 
 
@@ -521,8 +638,8 @@ hocotext_smaller(PG_FUNCTION_ARGS){
 Datum
 hocotext_larger(PG_FUNCTION_ARGS){
 
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     text *result;
 
     result = (hocotext_hoco_cmp_helper(left,right,PG_GET_COLLATION()) > 0 ? left : right);
@@ -543,8 +660,8 @@ hocotext_larger(PG_FUNCTION_ARGS){
 Datum
 hocotext_cmp(PG_FUNCTION_ARGS){
 
-    struct varlena *left = PG_GETARG_TEXT_PP(0);
-    struct varlena *right = PG_GETARG_TEXT_PP(1);
+    struct varlena *left = PG_GETARG_TEXT_PP_PARTIAL(0);
+    struct varlena *right = PG_GETARG_TEXT_PP_PARTIAL(1);
     int32 result;
 
 

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "miscadmin.h"
 
 /**
  * utility functions
@@ -87,6 +88,7 @@ extern text * hocotext_hoco_extract_helper(struct varlena * source,int32 offset,
 extern text * hocotext_hoco_insert_helper(struct varlena * source,int32 offset,text * str,Oid collid);
 extern text * hocotext_hoco_overlay_helper(struct varlena * source,int32 offset,int32 len,text * str,Oid collid);
 extern text * hocotext_hoco_delete_helper(struct varlena * source,int32 offset,int32 len,Oid collid);
+extern bool hocotext_hoco_like_helper(text * str,text * pat,Oid collid);
 /**
  * ************************************************************
  *                 COMMON UTILITY FUNCTIONS                   *
@@ -126,25 +128,18 @@ extern int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned 
 extern text * rle_compress(struct varlena *source, const RLE_Strategy *strategy, Oid collid);
 extern text * rle_decompress(struct varlena *source, Oid collid);
 
-/*
- * hocotext_rle_*_cmp()
- * Internal comparison function for hocotext_rle strings (and common text strings).
- * Returns int32 negative, zero, or positive.
- */
-
-extern int32 hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right, Oid collid);
-
 /**
  * hocotext_rle_*_*()
  * internal operation functions
 */
-extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len,Oid collid);
-extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str,Oid collid);
-extern text * hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str,Oid collid);
-extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len,Oid collid);
+extern int32 hocotext_rle_hoco_cmp(struct varlena * left, struct varlena * right);
+extern text * hocotext_rle_hoco_extract(struct varlena * source,int32 offset,int32 len);
+extern text * hocotext_rle_hoco_insert(struct varlena * source,int32 offset,text *str);
+extern text * hocotext_rle_hoco_overlay(struct varlena * source,int32 offset,int32 len,text *str);
+extern text * hocotext_rle_hoco_delete(struct varlena * source,int32 offset,int32 len);
+extern bool hocotext_rle_hoco_like(text *str, text *pat);
 extern int32 hocotext_rle_hoco_char_length(struct varlena * source,Oid collid);
 extern text * hocotext_rle_hoco_concat(struct varlena * left,struct varlena * right,Oid collid);
-
 /**
  * tadoc_(de)compress()
  * internal compression module

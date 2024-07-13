@@ -1775,7 +1775,7 @@ SELECT regexp_match('foobarbequebaz'::citext, '(BAR)(BEQUE)') = ARRAY[ 'bar', 'b
  t
 (1 row)
 
-SELECT regexp_match('foobarbequebaz'::citext, '(BAR)(BEQUE)'::citext) = ARRAY[ 'bar', 'beque' ] AS t;
+SELECT p_match('foobarbequebaz'::citext, '(BAR)(BEQUE)'::citext) = ARRAY[ 'bar', 'beque' ] AS t;
  t 
 ---
  t

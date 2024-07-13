@@ -236,6 +236,7 @@ extern struct varlena *pg_detoast_datum_copy(struct varlena *datum);
 extern struct varlena *pg_detoast_datum_slice(struct varlena *datum,
 											  int32 first, int32 count);
 extern struct varlena *pg_detoast_datum_packed(struct varlena *datum);
+extern struct varlena *pg_detoast_datum_packed_partial(struct varlena *datum);
 
 #define PG_DETOAST_DATUM(datum) \
 	pg_detoast_datum((struct varlena *) DatumGetPointer(datum))
@@ -247,7 +248,9 @@ extern struct varlena *pg_detoast_datum_packed(struct varlena *datum);
 /* WARNING -- unaligned pointer */
 #define PG_DETOAST_DATUM_PACKED(datum) \
 	pg_detoast_datum_packed((struct varlena *) DatumGetPointer(datum))
-
+/* WARNING -- unaligned pointer */
+#define PG_DETOAST_DATUM_PACKED_PARTIAL(datum) \
+	pg_detoast_datum_packed_partial((struct varlena *) DatumGetPointer(datum))
 /*
  * Support for cleaning up detoasted copies of inputs.  This must only
  * be used for pass-by-ref datatypes, and normally would only be used
@@ -290,6 +293,7 @@ extern struct varlena *pg_detoast_datum_packed(struct varlena *datum);
 /* DatumGetFoo macros for varlena types will typically look like this: */
 #define DatumGetByteaPP(X)			((bytea *) PG_DETOAST_DATUM_PACKED(X))
 #define DatumGetTextPP(X)			((text *) PG_DETOAST_DATUM_PACKED(X))
+#define DatumGetTextPP_PARTIAL(X)			((text *) PG_DETOAST_DATUM_PACKED_PARTIAL(X))
 #define DatumGetBpCharPP(X)			((BpChar *) PG_DETOAST_DATUM_PACKED(X))
 #define DatumGetVarCharPP(X)		((VarChar *) PG_DETOAST_DATUM_PACKED(X))
 #define DatumGetHeapTupleHeader(X)	((HeapTupleHeader) PG_DETOAST_DATUM(X))
@@ -307,6 +311,7 @@ extern struct varlena *pg_detoast_datum_packed(struct varlena *datum);
 /* GETARG macros for varlena types will typically look like this: */
 #define PG_GETARG_BYTEA_PP(n)		DatumGetByteaPP(PG_GETARG_DATUM(n))
 #define PG_GETARG_TEXT_PP(n)		DatumGetTextPP(PG_GETARG_DATUM(n))
+#define PG_GETARG_TEXT_PP_PARTIAL(n)		DatumGetTextPP_PARTIAL(PG_GETARG_DATUM(n))
 #define PG_GETARG_BPCHAR_PP(n)		DatumGetBpCharPP(PG_GETARG_DATUM(n))
 #define PG_GETARG_VARCHAR_PP(n)		DatumGetVarCharPP(PG_GETARG_DATUM(n))
 #define PG_GETARG_HEAPTUPLEHEADER(n)	DatumGetHeapTupleHeader(PG_GETARG_DATUM(n))
