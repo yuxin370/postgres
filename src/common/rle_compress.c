@@ -165,7 +165,7 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
     memcpy(buf,sp,srcend-sp);
     buf += (srcend - sp);
 
-    if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
+    while(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
         store_single_buf(dp,buf_base,buf,true);
     }  
 
@@ -198,8 +198,8 @@ int32 rle_compress(const char *source, int32 slen, char *dest,
 
 	char *dp = (unsigned char *) dest;           //compressed data
 
-    int32 rawsize = slen;
-    buf_put_int(dp, rawsize | 0x40000000);     // record rawsize
+
+    buf_put_int(dp, slen | 0x40000000);     // record rawsize
 
     /**
      * Our fallback strategy is default.
@@ -234,7 +234,7 @@ int32 rle_compress(const char *source, int32 slen, char *dest,
     result_size = rle_compress_ctrl(sp,srcend,dp);
 
     if(result_size >= result_max) return -1;
-    return result_size + 1; // 1 for header 
+    return result_size + 4; // 1 for header 
 }
 
 /**
@@ -260,16 +260,18 @@ rle_decompress(const char *source, int32 slen, char *dest,
     int32 repeat_count;
     int32 single_count;
     char cur_data;
-	int32 rawsize_read = buf_get_int(sp) & 0x3fffffff;
-
+    int32 rawsize_read;
     sp = (const unsigned char *) source;
-	srcend = ((const unsigned char *) source) + slen;
+	srcend = sp + slen;
 	dp = (unsigned char *) dest;
 	destend = dp + rawsize;
 
+
+	rawsize_read = buf_get_int(sp) & 0x3fffffff;
+
     if(rawsize != rawsize_read){
 		// ereport(ERROR,(errmsg("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read)));
-		pg_printf("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read);
+		pg_printf("rawsize = %d while record rowsize = %d.\n",rawsize,rawsize_read);
 	}
 
     int count = 0;
@@ -284,12 +286,14 @@ rle_decompress(const char *source, int32 slen, char *dest,
                 *dp = cur_data;
                 dp++;
             }
+            // pg_printf("writing rle %d %c\n",repeat_count,*(dp-1));
             sp ++;
         }else{
             single_count = (int32)((*sp) & 0x7F);
             sp++;
             count += single_count;
             memcpy(dp,sp,single_count);
+            // pg_printf("writing bitpacked %d %s\n",single_count,dp);
             dp += single_count;
             sp += single_count;
 
@@ -302,10 +306,9 @@ rle_decompress(const char *source, int32 slen, char *dest,
 	 */
 	if (check_complete && (dp != destend || sp != srcend))
 		return -1;
-
 	/*
 	 * That's it.
 	 */
-	return (char *) dp - dest;
+	return (char *) dp - (char *)dest;
 
 }

@@ -120,7 +120,7 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
     memcpy(buf,sp,srcend-sp);
     buf += (srcend - sp);
 
-    if(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
+    while(buf - buf_base >= MAX_SINGLE_STORE_SIZE){
         store_single_buf(dp,buf_base,buf,true);
     }  
 
@@ -309,12 +309,14 @@ rle_decompress(struct varlena *source,Oid collid){
                 *dp = cur_data;
                 dp++;
             }
+            // pg_printf("writing rle %d %c\n",repeat_count,*(dp-1));
             sp ++;
         }else{
             single_count = (int32)((*sp) & 0x7F);
             sp++;
             count += single_count;
             memcpy(dp,sp,single_count);
+            // pg_printf("writing bitpacked %d %s\n",single_count,dp);
             dp += single_count;
             sp += single_count;
 
