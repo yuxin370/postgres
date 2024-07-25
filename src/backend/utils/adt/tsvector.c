@@ -177,7 +177,7 @@ WordEntryCMP(WordEntry *a, WordEntry *b, char *buf)
 Datum
 tsvectorin(PG_FUNCTION_ARGS)
 {
-	char	   *buf = PG_GETARG_CSTRING(0);
+	char	   *buf = PG_GETARG_CSTRING(0);  
 	Node	   *escontext = fcinfo->context;
 	TSVectorParseState state;
 	WordEntryIN *arr;
@@ -198,7 +198,7 @@ tsvectorin(PG_FUNCTION_ARGS)
 	 * Tokens are appended to tmpbuf, cur is a pointer to the end of used
 	 * space in tmpbuf.
 	 */
-	char	   *tmpbuf;
+	char	   *tmpbuf;   // token 文本
 	char	   *cur;
 	int			buflen = 256;	/* allocated size of tmpbuf */
 

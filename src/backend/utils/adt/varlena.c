@@ -5092,6 +5092,12 @@ pg_column_compression(PG_FUNCTION_ARGS)
 	/* convert compression method id to compression method name */
 	switch (cmid)
 	{
+		/**
+		 * yuxin tang 
+		*/
+		case TOAST_LZW_COMPRESSION_ID:
+			result = "lzw";
+			break;
 		case TOAST_RLE_COMPRESSION_ID:
 			result = "rle";
 			break;

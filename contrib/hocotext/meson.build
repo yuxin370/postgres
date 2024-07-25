@@ -5,6 +5,7 @@ hocotext_sources = files(
     'hocotext_rle.c',
     'rle_compress.c',
     'tadoc_compress.c'
+    'lzw_compress.c'
     'tadoc_tsvector.c'
 )
 

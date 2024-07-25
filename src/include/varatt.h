@@ -335,11 +335,14 @@ typedef struct
 	((toast_pointer).va_extinfo & VARLENA_EXTSIZE_MASK)
 #define VARATT_EXTERNAL_GET_COMPRESS_METHOD(toast_pointer) \
 	((toast_pointer).va_extinfo >> VARLENA_EXTSIZE_BITS)
-/** hocotext*/
+/** hocotext 
+ * yuxin tang
+ * */
 #define VARATT_EXTERNAL_SET_SIZE_AND_COMPRESS_METHOD(toast_pointer, len, cm) \
 	do { \
 		Assert((cm) == TOAST_PGLZ_COMPRESSION_ID || \
 			   (cm) == TOAST_RLE_COMPRESSION_ID || \
+			   (cm) == TOAST_LZW_COMPRESSION_ID || \
 			   (cm) == TOAST_TADOC_COMPRESSION_ID || \
 			   (cm) == TOAST_LZ4_COMPRESSION_ID); \
 		((toast_pointer).va_extinfo = \

@@ -39,9 +39,12 @@ typedef enum ToastCompressionId
 	TOAST_PGLZ_COMPRESSION_ID = 0,
 	TOAST_LZ4_COMPRESSION_ID = 1,
 	TOAST_INVALID_COMPRESSION_ID = 2,
-	/** hocotext*/
+	/** hocotext
+	 * yuxin tang 
+	*/
 	TOAST_RLE_COMPRESSION_ID = 3,
 	TOAST_TADOC_COMPRESSION_ID = 4,
+	TOAST_LZW_COMPRESSION_ID = 5
 } ToastCompressionId;
 
 /*
@@ -51,8 +54,12 @@ typedef enum ToastCompressionId
  */
 #define TOAST_PGLZ_COMPRESSION			'p'
 #define TOAST_LZ4_COMPRESSION			'l'
-/** hocotext*/
+/** hocotext
+ * 
+ * yuxin tang 
+*/
 #define TOAST_RLE_COMPRESSION			'r'
+#define TOAST_LZW_COMPRESSION			'w'
 #define TOAST_TADOC_COMPRESSION			't'
 #define InvalidCompressionMethod		'\0'
 
@@ -64,6 +71,15 @@ extern struct varlena *rle_compress_datum(const struct varlena *value);
 extern struct varlena *rle_decompress_datum(const struct varlena *value,bool partialDecomp);
 extern struct varlena *rle_decompress_datum_slice(const struct varlena *value,
 												   int32 slicelength);
+
+
+/* lzw compression/decompression routines */
+/** yuxin tang*/
+extern struct varlena *lzw_compress_datum(const struct varlena *value);
+extern struct varlena *lzw_decompress_datum(const struct varlena *value,bool partialDecomp);
+extern struct varlena *lzw_decompress_datum_slice(const struct varlena *value,
+												   int32 slicelength);
+
 
 /* tadoc compression/decompression routines */
 /** yuxin tang*/

@@ -40,6 +40,7 @@ common_sources = files(
   'wchar.c',
   'rle_compress.c',
   'tadoc_compress.c',
+  'lzw_compress.c',
 )
 
 if ssl.found()

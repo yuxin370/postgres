@@ -86,6 +86,7 @@ OBJS_COMMON = \
 	wchar.o \
 	rle_compress.o \
 	tadoc_compress.o \
+	lzw_compress.o \
 
 ifeq ($(with_ssl),openssl)
 OBJS_COMMON += \

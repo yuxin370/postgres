@@ -10,6 +10,7 @@ OBJS = \
 	hocotext_rle.o\
 	rle_compress.o\
 	tadoc_compress.o\
+	lzw_compress.o\
 	tadoc_tsvector.o\
 
 EXTENSION = hocotext

@@ -20,6 +20,7 @@
 #include "common/int.h"
 #include "common/pg_lzcompress.h"
 #include "common/rle_compress.h"
+#include "common/lzw_compress.h"
 #include "common/tadoc_compress.h"
 #include "utils/expandeddatum.h"
 #include "utils/rel.h"
@@ -576,6 +577,8 @@ toast_decompress_datum(struct varlena *attr,bool partialDecomp)
 		/** yuxin tang */
 		case TOAST_RLE_COMPRESSION_ID:
 			return rle_decompress_datum(attr,partialDecomp);
+		case TOAST_LZW_COMPRESSION_ID:
+			return lzw_decompress_datum(attr,partialDecomp);
 		case TOAST_TADOC_COMPRESSION_ID:
 			return tadoc_decompress_datum(attr,partialDecomp);
 		case TOAST_PGLZ_COMPRESSION_ID:
@@ -621,11 +624,16 @@ toast_decompress_datum_slice(struct varlena *attr, int32 slicelength)
 	cmid = TOAST_COMPRESS_METHOD(attr);
 	switch (cmid)
 	{
-		/** hocotext*/
+		/** hocotext
+		 * yuxin tang
+		 * 
+		*/
 		case TOAST_RLE_COMPRESSION_ID:
 			return rle_decompress_datum_slice(attr, slicelength);
 		case TOAST_TADOC_COMPRESSION_ID:
 			return tadoc_decompress_datum_slice(attr, slicelength);
+		case TOAST_LZW_COMPRESSION_ID:
+			return lzw_decompress_datum_slice(attr, slicelength);
 		case TOAST_PGLZ_COMPRESSION_ID:
 			return pglz_decompress_datum_slice(attr, slicelength);
 		case TOAST_LZ4_COMPRESSION_ID:

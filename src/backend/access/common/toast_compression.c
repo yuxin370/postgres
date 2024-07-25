@@ -21,6 +21,7 @@
 #include "access/toast_compression.h"
 #include "common/pg_lzcompress.h"
 #include "common/rle_compress.h"
+#include "common/lzw_compress.h"
 #include "common/tadoc_compress.h"
 #include "varatt.h"
 
@@ -294,6 +295,173 @@ rle_decompress_datum_slice(const struct varlena *value,
 
 	return result;
 }
+
+
+
+
+
+
+/**
+ * yuxin tang
+ * Compress a varlena using LZW.
+ *
+ * Returns the compressed varlena, or NULL if compression fails.
+ */
+struct varlena *
+lzw_compress_datum(const struct varlena *value)
+{
+	int32		valsize,
+				len;
+	struct varlena *tmp = NULL;
+	char * inter_res;
+	valsize = VARSIZE_ANY_EXHDR(value);
+
+	/*
+	 * No point in wasting a palloc cycle if value size is outside the allowed
+	 * range for compression.
+	 */
+	if (valsize < LZW_strategy_default->min_input_size ||
+		valsize > LZW_strategy_default->max_input_size)
+		return NULL;
+
+	/*
+	 * Figure out the maximum possible size of the rle output, add the bytes
+	 * that will be needed for varlena overhead, and allocate that amount.
+	 */
+	tmp = (struct varlena *) palloc(RLE_MAX_OUTPUT(valsize) +
+									VARHDRSZ_COMPRESSED);
+
+	inter_res = (char *) palloc(RLE_MAX_OUTPUT(valsize));
+
+	ereport(LOG,(errmsg("before compression . raw size = %d.",valsize)));
+	len = lzw_compress(VARDATA_ANY(value),
+						valsize,
+						(char *) inter_res,
+						NULL);
+	ereport(LOG,(errmsg("rle_compress finished. compressed size = %d.",len)));
+	len = pglz_compress(inter_res,
+						len,
+						(char *) tmp + VARHDRSZ_COMPRESSED,
+						NULL);
+	ereport(LOG,(errmsg("pglz_compress finished. compressed size = %d.",len)));
+
+	// len = lzw_compress(VARDATA_ANY(value),
+	// 					valsize,
+	// 					(char *) tmp + VARHDRSZ_COMPRESSED,
+	// 					NULL);
+	// ereport(LOG,(errmsg("rle_compress finished. compressed size = %d.",len)));
+	
+	
+	if (len < 0)
+	{
+		pfree(tmp);
+		return NULL;
+	}
+
+	// free(inter_res);
+
+	SET_VARSIZE_COMPRESSED(tmp, len + VARHDRSZ_COMPRESSED);
+
+	return tmp;
+}
+
+/**
+ * yuxin tang
+ * Decompress a varlena that was compressed using LZW.
+ */
+struct varlena *
+lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
+{
+	struct varlena *result;
+	char * inter_res;
+	int32 rawsize;
+	int32 rawsize_1;
+	/* allocate memory for the uncompressed data */
+	result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
+	if(!partialDecomp){
+		inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
+
+		/* decompress the data */
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								inter_res,
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
+		rawsize_1 = rawsize;
+
+		/* decompress the data */
+		rawsize = lzw_decompress(inter_res,
+								rawsize,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
+	}else{
+		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+								VARSIZE(value) - VARHDRSZ_COMPRESSED,
+								VARDATA(result),
+								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
+	}
+
+	// rawsize = rle_decompress((char *) value + VARHDRSZ_COMPRESSED,
+	// 						VARSIZE(value) - VARHDRSZ_COMPRESSED,
+	// 						VARDATA(result),
+	// 						VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
+	// ereport(LOG,(errmsg("rle_decompress finished. rawsize size = %d.",rawsize)));
+	
+	if (rawsize < 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_DATA_CORRUPTED),
+				 errmsg_internal("compressed rle data is corrupt, pglz decompressed rawsize = %d, finally raw size = %d",rawsize_1,rawsize)));
+	
+	SET_VARSIZE(result, rawsize + VARHDRSZ);
+
+	return result;
+}
+
+/**
+ * yuxin tang
+ * Decompress part of a varlena that was compressed using LZW.
+ */
+struct varlena *
+lzw_decompress_datum_slice(const struct varlena *value,
+							int32 slicelength)
+{
+	struct varlena *result;
+	char * inter_res;
+	int32		rawsize;
+
+	/* allocate memory for the uncompressed data */
+	result = (struct varlena *) palloc(slicelength + VARHDRSZ);
+	inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
+
+	/* decompress the data */
+	rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
+							  VARSIZE(value) - VARHDRSZ_COMPRESSED,
+							  inter_res,
+							  VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
+
+
+	/* decompress the data */
+	rawsize = lzw_decompress(inter_res,
+							  rawsize,
+							  VARDATA(result),
+							  slicelength, false);
+
+
+	// /* decompress the data */
+	// rawsize = rle_decompress((char *) value + VARHDRSZ_COMPRESSED,
+	// 						  VARSIZE(value) - VARHDRSZ_COMPRESSED,
+	// 						  VARDATA(result),
+	// 						  slicelength, false);
+
+	if (rawsize < 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_DATA_CORRUPTED),
+				 errmsg_internal("compressed rle data is corrupt")));
+
+	SET_VARSIZE(result, rawsize + VARHDRSZ);
+
+	return result;
+}
+
 
 
 
@@ -615,6 +783,8 @@ CompressionNameToMethod(const char *compression)
 		return TOAST_PGLZ_COMPRESSION;
 	else if(strcmp(compression, "rle") == 0){
 		return TOAST_RLE_COMPRESSION;
+	}else if(strcmp(compression, "lzw") == 0){
+		return TOAST_LZW_COMPRESSION;
 	}else if(strcmp(compression, "tadoc") == 0){
 		return TOAST_TADOC_COMPRESSION;
 	}else if (strcmp(compression, "lz4") == 0)
@@ -646,6 +816,8 @@ GetCompressionMethodName(char method)
 			return "pglz";
 		case TOAST_LZ4_COMPRESSION:
 			return "lz4";
+		case TOAST_LZW_COMPRESSION:
+			return "lzw";
 		default:
 			elog(ERROR, "invalid compression method %c", method);
 			return NULL;		/* keep compiler quiet */

@@ -107,7 +107,6 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
                 buf_copy_ctrl(buf,sp);
             }
 
-
         }else{
             buf_copy_ctrl(buf,sp);
         }

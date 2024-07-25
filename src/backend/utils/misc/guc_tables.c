@@ -456,8 +456,11 @@ static const struct config_enum_entry shared_memory_options[] = {
 };
 
 static const struct config_enum_entry default_toast_compression_options[] = {
-
+	/**
+	 * yuxin tang
+	*/
 	{"rle", TOAST_RLE_COMPRESSION, false},
+	{"lzw", TOAST_LZW_COMPRESSION, false},
 	{"tadoc", TOAST_TADOC_COMPRESSION, false},
 	{"pglz", TOAST_PGLZ_COMPRESSION, false},
 #ifdef  USE_LZ4

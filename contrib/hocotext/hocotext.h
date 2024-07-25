@@ -47,23 +47,60 @@ do{ \
 }while(0)
 
 // big endian
-#define buf_get_int(__bp) \
-({ \
+#define buf_put_int(__bp,__v)                                                   \
+do {                                                                            \
+    for(int32 seg = 3 ; seg >= 0 ; seg --,__bp++){                                \
+        (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
+    }                                                                           \
+}while(0)
+
+// big endian
+#define buf_get_int(__bp)                                           \
+({                                                                  \
     int32 value = 0;                                                  \
-    for(int seg = 3 ; seg >= 0 ; seg --,__bp++){                     \
-        value |=  (int32)((*__bp)&0xFF) << (8*seg);                 \
+    for(int32 seg = 3 ; seg >= 0 ; seg --,__bp++){                    \
+        value |=  (int32)((*__bp)&0xFF) << (8*seg);                   \
     }                                                               \
     value;                                                          \
 })
 
+
 // big endian
-#define buf_put_int(__bp,__v) \
-do { \
-    for(int seg = 3 ; seg >= 0 ; seg --,__bp++){      \
+#define buf_put_int8(__bp,__v)                                                  \
+do {                                                                            \
+    for(int32 seg = 0 ; seg >= 0 ; seg --,__bp++){                                \
         (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
-    }                                                               \
+    }                                                                           \
 }while(0)
 
+// big endian
+#define buf_get_int8(__bp)                                              \
+({                                                                      \
+    int32 value = 0;                                                      \
+    for(int32 seg = 0 ; seg >= 0 ; seg --,__bp++){                        \
+        value |=  (int32)((*__bp)&0xFF) << (8*seg);                       \
+    }                                                                   \
+    value;                                                              \
+})
+
+
+// big endian
+#define buf_put_int16(__bp,__v)                                                 \
+do {                                                                            \
+    for(int32 seg = 1 ; seg >= 0 ; seg --,__bp++){                                \
+        (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
+    }                                                                           \
+}while(0)
+
+// big endian
+#define buf_get_int16(__bp)                                                 \
+({                                                                          \
+    int32 value = 0;                                                          \
+    for(int32 seg = 1 ; seg >= 0 ; seg --,__bp++){                            \
+        value |=  (int32)((*__bp)&0xFF) << (8*seg);                           \
+    }                                                                       \
+    value;                                                                  \
+})
 
 #define RAWDATA_BYTE 4
 

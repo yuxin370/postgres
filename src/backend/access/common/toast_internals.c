@@ -69,6 +69,10 @@ toast_compress_datum(Datum value, char cmethod)
 			tmp = rle_compress_datum((const struct varlena *) value);
 			cmid = TOAST_RLE_COMPRESSION_ID;
 			break;
+		case TOAST_LZW_COMPRESSION:
+			tmp = lzw_compress_datum((const struct varlena *) value);
+			cmid = TOAST_LZW_COMPRESSION_ID;
+			break;
 		case TOAST_TADOC_COMPRESSION:
 			tmp = tadoc_compress_datum((const struct varlena *) value);
 			cmid = TOAST_TADOC_COMPRESSION_ID;

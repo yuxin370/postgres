@@ -16562,7 +16562,9 @@ dumpTableSchema(Archive *fout, const TableInfo *tbinfo)
 
 				switch (tbinfo->attcompression[j])
 				{
-					/**hocotext*/
+					/**hocotext
+					 * yuxin tang
+					*/
 					case 'r':
 						cmname = "rle";
 						break;
@@ -16574,6 +16576,9 @@ dumpTableSchema(Archive *fout, const TableInfo *tbinfo)
 						break;
 					case 'l':
 						cmname = "lz4";
+						break;
+					case 'w':
+						cmname = "lzw";
 						break;
 					default:
 						cmname = NULL;

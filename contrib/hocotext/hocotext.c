@@ -19,7 +19,7 @@ PG_MODULE_MAGIC;
  * > plain 00
  * > rle 01
  * > tadoc 10
- * > ??? 11
+ * > lzw 11
 */
 
 
@@ -291,6 +291,8 @@ PG_FUNCTION_INFO_V1(hocotext_compress_rle);
 PG_FUNCTION_INFO_V1(hocotext_decompress_rle); 
 PG_FUNCTION_INFO_V1(hocotext_compress_tadoc); 
 PG_FUNCTION_INFO_V1(hocotext_decompress_tadoc); 
+PG_FUNCTION_INFO_V1(hocotext_compress_lzw); 
+PG_FUNCTION_INFO_V1(hocotext_decompress_lzw); 
 PG_FUNCTION_INFO_V1(hocotext_to_tsvector);
 
 /**
@@ -374,6 +376,31 @@ hocotext_decompress_rle(PG_FUNCTION_ARGS){
    PG_FREE_IF_COPY(source,0);
 
    PG_RETURN_TEXT_P(result);
+}
+
+Datum
+hocotext_compress_lzw(PG_FUNCTION_ARGS){
+    text *source = PG_GETARG_TEXT_PP(0);
+    text *result = (text *)palloc(VARSIZE_ANY_EXHDR(source) + VARHDRSZ); 
+
+    lzw_compress(source,result,PG_GET_COLLATION());
+    PG_FREE_IF_COPY(source,0);
+
+    PG_RETURN_TEXT_P(result);
+}
+
+Datum
+hocotext_decompress_lzw(PG_FUNCTION_ARGS){
+    struct varlena *source = PG_GETARG_TEXT_PP(0);
+
+    unsigned char * sp = VARDATA_ANY(source);
+    int32 rawsize = buf_get_int(sp) & 0x3fffffff;
+    text *result = (text *)palloc(rawsize + VARHDRSZ);
+
+    lzw_decompress(source,result,PG_GET_COLLATION());
+    PG_FREE_IF_COPY(source,0);
+
+    PG_RETURN_TEXT_P(result);
 }
 
 Datum
