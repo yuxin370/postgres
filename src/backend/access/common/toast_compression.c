@@ -19,11 +19,13 @@
 
 #include "access/detoast.h"
 #include "access/toast_compression.h"
+#include "access/toast_internals.h"
 #include "common/pg_lzcompress.h"
 #include "common/rle_compress.h"
 #include "common/lzw_compress.h"
 #include "common/tadoc_compress.h"
 #include "varatt.h"
+#include <limits.h>
 
 /* GUC */
 int			default_toast_compression = TOAST_PGLZ_COMPRESSION;
@@ -33,6 +35,20 @@ int			default_toast_compression = TOAST_PGLZ_COMPRESSION;
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), \
 			 errmsg("compression method lz4 not supported"), \
 			 errdetail("This functionality requires the server to be built with lz4 support.")))
+
+const PGLZ_Strategy double_compress_default_data = {
+	0,							/* Data chunks less than 32 bytes are not
+								 * compressed */
+	INT_MAX,					/* No upper limit on what we'll try to
+								 * compress */
+	0,							/* Require 25% compression rate, or not worth
+								 * it */
+	1024,						/* Give up if no compression in the first 1KB */
+	128,						/* Stop history lookup if a match of 128 bytes
+								 * is found */
+	10							/* Lower good match size by 10% at every loop
+								 * iteration */
+	};
 
 /*
  * Compress a varlena using PGLZ.
@@ -173,10 +189,15 @@ rle_compress_datum(const struct varlena *value)
 						(char *) inter_res,
 						NULL);
 	ereport(LOG,(errmsg("rle_compress finished. compressed size = %d.",len)));
+	if (len < 0)
+	{
+		pfree(tmp);
+		return NULL;
+	}
 	len = pglz_compress(inter_res,
 						len,
 						(char *) tmp + VARHDRSZ_COMPRESSED,
-						NULL);
+						&double_compress_default_data);
 	ereport(LOG,(errmsg("pglz_compress finished. compressed size = %d.",len)));
 
 	// len = rle_compress(VARDATA_ANY(value),
@@ -211,8 +232,8 @@ rle_decompress_datum(const struct varlena *value,bool partialDecomp)
 	int32 rawsize;
 	int32 rawsize_1;
 	/* allocate memory for the uncompressed data */
-	result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
 	if(!partialDecomp){
+		result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
 		inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
 
 		/* decompress the data */
@@ -228,9 +249,12 @@ rle_decompress_datum(const struct varlena *value,bool partialDecomp)
 								VARDATA(result),
 								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
 	}else{
+		result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ_COMPRESSED);
+		
 		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
 								VARSIZE(value) - VARHDRSZ_COMPRESSED,
-								VARDATA(result),
+								// VARDATA(result),
+								(char *) result + VARHDRSZ_COMPRESSED,
 								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
 	}
 
@@ -245,7 +269,13 @@ rle_decompress_datum(const struct varlena *value,bool partialDecomp)
 				(errcode(ERRCODE_DATA_CORRUPTED),
 				 errmsg_internal("compressed rle data is corrupt, pglz decompressed rawsize = %d, finally raw size = %d",rawsize_1,rawsize)));
 	
-	SET_VARSIZE(result, rawsize + VARHDRSZ);
+	if(!partialDecomp){
+		SET_VARSIZE(result, rawsize + VARHDRSZ);
+	}else{
+		SET_VARSIZE_COMPRESSED(result, rawsize + VARHDRSZ_COMPRESSED);
+		ToastCompressionId cmid = TOAST_RLE_COMPRESSION_ID;
+		TOAST_COMPRESS_SET_SIZE_AND_COMPRESS_METHOD(result, rawsize, cmid);
+	}
 
 	return result;
 }
@@ -328,22 +358,28 @@ lzw_compress_datum(const struct varlena *value)
 	 * Figure out the maximum possible size of the rle output, add the bytes
 	 * that will be needed for varlena overhead, and allocate that amount.
 	 */
-	tmp = (struct varlena *) palloc(RLE_MAX_OUTPUT(valsize) +
+	tmp = (struct varlena *) palloc(LZW_MAX_OUTPUT(valsize) +
 									VARHDRSZ_COMPRESSED);
 
-	inter_res = (char *) palloc(RLE_MAX_OUTPUT(valsize));
+	inter_res = (char *) palloc(LZW_MAX_OUTPUT(valsize));
 
 	ereport(LOG,(errmsg("before compression . raw size = %d.",valsize)));
 	len = lzw_compress(VARDATA_ANY(value),
 						valsize,
 						(char *) inter_res,
 						NULL);
-	ereport(LOG,(errmsg("rle_compress finished. compressed size = %d.",len)));
+	ereport(LOG,(errmsg("------ lzw_compress finished. compressed size = %d.",len)));
+	if (len < 0)
+	{
+		pfree(tmp);
+		return NULL;
+	}
+
 	len = pglz_compress(inter_res,
 						len,
 						(char *) tmp + VARHDRSZ_COMPRESSED,
-						NULL);
-	ereport(LOG,(errmsg("pglz_compress finished. compressed size = %d.",len)));
+						&double_compress_default_data);
+	ereport(LOG,(errmsg("----- pglz_compress finished. compressed size = %d.",len)));
 
 	// len = lzw_compress(VARDATA_ANY(value),
 	// 					valsize,
@@ -376,9 +412,10 @@ lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
 	char * inter_res;
 	int32 rawsize;
 	int32 rawsize_1;
+	printf("lzw_decompressing. partialDecomp = %d\n",partialDecomp);
 	/* allocate memory for the uncompressed data */
-	result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
 	if(!partialDecomp){
+		result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
 		inter_res = (char *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value));
 
 		/* decompress the data */
@@ -394,9 +431,12 @@ lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
 								VARDATA(result),
 								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
 	}else{
+		result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ_COMPRESSED);
+		
 		rawsize = pglz_decompress((char *) value + VARHDRSZ_COMPRESSED,
 								VARSIZE(value) - VARHDRSZ_COMPRESSED,
-								VARDATA(result),
+								// VARDATA(result),
+								(char *) result + VARHDRSZ_COMPRESSED,
 								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
 	}
 
@@ -409,9 +449,15 @@ lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
 	if (rawsize < 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DATA_CORRUPTED),
-				 errmsg_internal("compressed rle data is corrupt, pglz decompressed rawsize = %d, finally raw size = %d",rawsize_1,rawsize)));
+				 errmsg_internal("compressed lzw data is corrupt, pglz decompressed rawsize = %d, finally raw size = %d",rawsize_1,rawsize)));
 	
-	SET_VARSIZE(result, rawsize + VARHDRSZ);
+	if(!partialDecomp){
+		SET_VARSIZE(result, rawsize + VARHDRSZ);
+	}else{
+		SET_VARSIZE_COMPRESSED(result, rawsize + VARHDRSZ_COMPRESSED);
+		ToastCompressionId cmid = TOAST_LZW_COMPRESSION_ID;
+		TOAST_COMPRESS_SET_SIZE_AND_COMPRESS_METHOD(result, rawsize, cmid);
+	}
 
 	return result;
 }

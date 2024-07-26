@@ -2125,12 +2125,16 @@ describeOneTableDetails(const char *schemaname,
 			char	   *compression = PQgetvalue(res, i, attcompression_col);
 
 			/* these strings are literal in our syntax, so not translated. */
+			/**
+			 * yuxin tang
+			*/
 			printTableAddCell(&cont, (compression[0] == 'p' ? "pglz" :
 									  (compression[0] == 'r' ? "rle" :
 									   (compression[0] == 't' ? "tadoc" :
-									    (compression[0] == 'l' ? "lz4" :
-									     (compression[0] == '\0' ? "" :
-										"???"))))),
+									    (compression[0] == 'w' ? "lzw" :
+									     (compression[0] == 'l' ? "lz4" :
+									      (compression[0] == '\0' ? "" :
+										   "???")))))),
 							  false, false);
 		}
 

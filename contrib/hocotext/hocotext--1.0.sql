@@ -173,7 +173,7 @@ RETURNS hocotext
 AS 'MODULE_PATHNAME','hocotext_decompress_lzw'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE FUNCTION "to_tsvector"( hocotext )
+CREATE FUNCTION "hoco_to_tsvector"( hocotext )
 RETURNS text
 AS 'MODULE_PATHNAME', 'hocotext_to_tsvector'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;

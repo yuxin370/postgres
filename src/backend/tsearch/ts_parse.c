@@ -363,6 +363,8 @@ parsetext(Oid cfgId, ParsedText *prs, char *buf, int buflen)
 	TSParserCacheEntry *prsobj;
 	void	   *prsdata;
 
+	printf("buf(len=%d) = %s\n",buflen,buf);
+
 	cfg = lookup_ts_config_cache(cfgId);
 	prsobj = lookup_ts_parser_cache(cfg->prsId);
 

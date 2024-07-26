@@ -108,7 +108,7 @@ const RLE_Strategy *const RLE_strategy_default = &rle_default_strategy;
 
 
 
-int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *dp){
+int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *dp,int32 result_max){
     int32 cur_index = 0;
     unsigned char cur_char;
     unsigned char *buf = (char *)palloc(MAX_SINGLE_STORE_SIZE);
@@ -119,13 +119,14 @@ int32 rle_compress_ctrl(unsigned char *sp,unsigned char *srcend,unsigned char *d
         /**
          * if we already exceed the maximum result size, fail.
         */
-        // if(dp - dstart >= result_max){
-        //     /**
-        //      * 
-        //      * RETURN raw text
-        //      * 
-        //     */
-        // } 
+        if(dp - dstart >= result_max){
+            /**
+             * 
+             * RETURN raw text
+             * 
+            */
+           return -1;
+        } 
         cur_index = 0; /** consequent repeated size */
         if((*(sp + cur_index)) == (*(sp+cur_index+1))){
             if((*(sp+cur_index+1)) == (*(sp+cur_index+2))){
@@ -231,9 +232,9 @@ int32 rle_compress(const char *source, int32 slen, char *dest,
 	else
 		result_max = (slen * (100 - need_rate)) / 100;
 
-    result_size = rle_compress_ctrl(sp,srcend,dp);
+    result_size = rle_compress_ctrl(sp,srcend,dp,result_max);
 
-    if(result_size >= result_max) return -1;
+    if(result_size >= result_max || result_size  == -1) return -1;
     return result_size + 4; // 1 for header 
 }
 

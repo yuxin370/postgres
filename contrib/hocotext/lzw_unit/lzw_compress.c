@@ -15,9 +15,9 @@
  * Local definitions
  * ----------
  */
-#define MAX_WORDS_COUNT 99999
-#define MAX_ENTRY_COUNT 9999
-#define MAX_ENTRY_SIZE 999
+#define MAX_WORDS_COUNT 9999999
+#define MAX_ENTRY_COUNT 999999
+#define MAX_ENTRY_SIZE 999999
 
 #define move_ptr(cur_buf,word_size)     \
     cur_buf += word_size;               \
@@ -356,6 +356,7 @@ int lzw_compress_ctrl(char *sp,char *srcend,char *dp){
         parse_word_size =getWord(stp,cur_word);
         stp += parse_word_size;
         tmp = hash_find(cur_word);
+        printf("finding = %s.\n",cur_word);
         if(tmp==NULL){
             hash_insert(cur_word,id_no);
             hash_insert_rev(cur_word,id_no," ");
@@ -489,8 +490,14 @@ lzw_decompress(char* sp, int slen, char* dest, int rawsize){
 
 int main(int argc, char *argv[])
 {
-    //char text[] = "TOTOB";
-    char text[] = "world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world";
+    char tp[] = "world hello ";
+    char* text = (char *)malloc(50000*13);
+    char *sp = text;
+    for(int i = 0 ; i < 500; i ++){
+        strcpy(sp,tp);
+        sp += strlen(tp);
+    }
+    sp = '\0';
     char *dest = (char *)malloc(MAX_WORDS_COUNT);
     char *decomp_dest = (char *)malloc(MAX_WORDS_COUNT);
     memset(dest,0,MAX_WORDS_COUNT);
@@ -499,10 +506,11 @@ int main(int argc, char *argv[])
 
     int reslen = lzw_compress_ctrl(text,srcend,dest);
     printf(" === compressing completed ==== \ncompressed len = %d, raw text len = %ld\n",reslen,strlen(text));
-    hash_clear();
-    hash_clear_rev();
+    dict = NULL;
+    dict_rev = NULL;
     int rawlen = lzw_decompress(dest,reslen,decomp_dest,strlen(text));
     printf(" === decompressing completed ==== \n compressed len = %d, raw text len = %ld\n decompressed data : %s\n",reslen,rawlen,decomp_dest);
-    hash_clear();
+    dict = NULL;
+    dict_rev = NULL;
     return 0;
 }

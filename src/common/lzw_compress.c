@@ -38,9 +38,9 @@ static const LZW_Strategy lzw_default_strategy = {
 const LZW_Strategy *const LZW_strategy_default = &lzw_default_strategy;
 
 
-#define MAX_WORDS_COUNT 99999
-#define MAX_ENTRY_COUNT 9999
-#define MAX_ENTRY_SIZE 999
+#define MAX_WORDS_COUNT 99999999
+#define MAX_ENTRY_COUNT 9999999
+#define MAX_ENTRY_SIZE 999999
 
 #define move_ptr(cur_buf,word_size)     \
     cur_buf += word_size;               \
@@ -48,20 +48,20 @@ const LZW_Strategy *const LZW_strategy_default = &lzw_default_strategy;
 
 #define buf_put_dict_entry(__bp,__len,__key,__id)                       \
 do{                                                                     \
-    buf_put_int8(__bp,__len);                                           \
+    buf_put_int16(__bp,__len);                                           \
     memcpy(__bp,__key,__len);                                           \
     __bp+=__len;                                                        \
-    buf_put_int8(__bp,__id);                                            \
+    buf_put_int16(__bp,__id);                                            \
 }while(0)
 
 #define buf_get_dict_entry(__bp)                                        \
 do{                                                                     \
-    int32 len = buf_get_int8(__bp);                                     \
+    int32 len = buf_get_int16(__bp);                                     \
     char tmp[MAX_ENTRY_SIZE];                                           \
     memcpy(tmp,__bp,len);                                               \
     tmp[len] = '\0';                                                    \
     __bp+=len;                                                          \
-    int32 id = buf_get_int8(__bp);                                      \
+    int32 id = buf_get_int16(__bp);                                      \
     hash_insert_rev_without_check(tmp,id,tmp);                          \
 }while(0)
 
@@ -149,9 +149,9 @@ void print_int(char * dest,char *end){
     printf("\n");
 }
 
-void print_int8(char * dest,char *end){
+void print_int16(char * dest,char *end){
     while(dest < end){
-        printf("%d ",buf_get_int8(dest));
+        printf("%d ",buf_get_int16(dest));
     }
     printf("\n");
 }
@@ -304,6 +304,7 @@ void hash_print(int32 type){
  * 
 */
 int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
+    printf("---------------- using compression !\n");
 	char *dstart = dp;                         //start of compressed data
     char *stp = sp;
     char* cur_word = (char *)malloc(MAX_ENTRY_SIZE);
@@ -338,7 +339,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
         word_no++;
     }
     stp = dstart;
-    buf_put_int8(stp,id_no); // fill basic entry count to dest
+    buf_put_int16(stp,id_no); // fill basic entry count to dest
     word_count = word_no;
 
     cur_id = input_word[0];
@@ -367,7 +368,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
             hash_insert_rev(buf_base,id_no," ");
             id_no++;            
             
-            buf_put_int8(dp,last_id);
+            buf_put_int16(dp,last_id);
 
             memcpy(buf_base,cur_word,word_size);
             cur_buf = buf_base + word_size;
@@ -379,8 +380,11 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     }
     
     // put last word entry in buf
-    buf_put_int8(dp,last_id);
+    buf_put_int16(dp,last_id);
     *dp = '\0';
+    
+    dict = NULL;
+    dict_rev = NULL;
 
     return (int)(dp - dstart);
 }
@@ -458,6 +462,7 @@ int32 lzw_compress(const char *source, int32 slen, char *dest,
 int32
 lzw_decompress(const char *source, int32 slen, char *dest,
 				int32 rawsize, bool check_complete){
+    printf("---------------- using decompression !\n");
 	const unsigned char *sp;
 	const unsigned char *srcend;
 	unsigned char *dp;
@@ -476,7 +481,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
 		pg_printf("rawsize = %d while record rowsize = %d.\n",rawsize,rawsize_read);
 	}
 
-    int32 entry_count = buf_get_int8(sp);
+    int32 entry_count = buf_get_int16(sp);
     int32 cur_id;
     int32 word_size = 0;
     char *pw = (char *)palloc(MAX_ENTRY_SIZE);
@@ -491,7 +496,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
         buf_get_dict_entry(sp);
     }
 
-    cur_id = buf_get_int8(sp);
+    cur_id = buf_get_int16(sp);
     tmp = hash_find_rev(cur_id);
     prev = tmp;
     strcpy(cw,tmp->key);
@@ -501,7 +506,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
     dp += word_size;
     
     while(sp < srcend){
-        int32 cur_id = buf_get_int8(sp);
+        int32 cur_id = buf_get_int16(sp);
         tmp = hash_find_rev(cur_id);
         if(tmp){
             strcpy(cw,tmp->key);

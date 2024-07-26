@@ -10,7 +10,7 @@
 
 #ifndef _LZW_COMPRESS_H_
 #define _LZW_COMPRESS_H_
-#define LZW_MAX_OUTPUT(_dlen)			((_dlen) + 4)
+#define LZW_MAX_OUTPUT(_dlen)			((_dlen)+2048)
 
 // big endian
 #define buf_put_int(__bp,__v)                                                   \

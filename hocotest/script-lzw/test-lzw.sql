@@ -12,7 +12,7 @@ quality_score DECIMAL(5,2));
 
 CREATE TABLE baseline(seq_id SERIAL PRIMARY KEY,
 exp_date DATE NOT NULL,
-seq_data HOCOTEXT COMPRESSION PGLZ,
+seq_data TEXT COMPRESSION PGLZ,
 quality_score DECIMAL(5,2));
 
 CREATE TABLE baseline_plain(seq_id SERIAL PRIMARY KEY,
@@ -21,22 +21,20 @@ seq_data TEXT STORAGE External,
 quality_score DECIMAL(5,2));
 
 
-insert into dna_seq values(1,'2023-03-25', (repeat('hello world',40)),95.5); 
-insert into baseline values(2,'2023-03-25', hoco_lzw(repeat('hello world',40)),95.5); 
-insert into baseline_plain values(1,'2023-03-25', repeat('hello world',40),95.5); 
+explain analyze insert into dna_seq values(9,'2023-03-25', (repeat('hello world ',8000)),95.5); 
+explain analyze insert into baseline values(9,'2023-03-25', (repeat('hello world ',8000)),95.5); 
+insert into baseline_plain values(1,'2023-03-25', repeat('hello world ',2000),95.5); 
+
+select hoco_de_lzw(seq_data) from baseline;
+select * from baseline;
 
 SELECT seq_data FROM dna_seq;
-select hoco_de_lzw(seq_data) from baseline;
+select to_tsvector(seq_data) FROM baseline;
+select to_tsvector(seq_data) FROM dna_seq;
+
+select pg_backend_pid();
 
 
-CREATE TABLE dna_seq_1(seq_id SERIAL PRIMARY KEY,
-exp_date DATE NOT NULL,
-seq_data HOCOTEXT COMPRESSION PGLZ,
-quality_score DECIMAL(5,2));
-
-insert into dna_seq_1 values(1,'2023-03-25', hoco_lzw(repeat('hello world',30)),95.5); 
-
-SELECT hoco_de_lzw(seq_data) FROM dna_seq_1;
 
 SELECT
 relname AS "Table",

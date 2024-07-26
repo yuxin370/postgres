@@ -17,6 +17,7 @@
 #include "tsearch/ts_utils.h"
 #include "utils/builtins.h"
 #include "utils/jsonfuncs.h"
+#include "access/toast_internals.h"
 
 
 /*
@@ -97,14 +98,6 @@ uniqueWORD(ParsedWord *a, int32 l)
 	 * Sort words with its positions
 	 */
 	qsort(a, l, sizeof(ParsedWord), compareWORD);
-
-	// for (int i = 0; i < l; ++i) {
-	// 	printf("%d: ", i);
-	// 	for (int j = 0; j < a[i].len; j++) {
-	// 		printf("%c", a[i].word[j]);
-	// 	}
-	// 	printf("\n");
-	// }
 
 	/*
 	 * Initialize first word and its first position
@@ -188,15 +181,20 @@ make_tsvector(ParsedText *prs)
 	if (prs->curwords > 0)
 		prs->curwords = uniqueWORD(prs->words, prs->curwords);
 
+	printf("-------------------------in make_tsvector---------------------\n");
+	printf("prs.curwords = %d prs.lenwords = %d prs.pos = %d\n",prs->curwords,prs->lenwords,prs->pos);
 	/* Determine space needed */
 	for (i = 0; i < prs->curwords; i++)
 	{
+		printf("i = %d, word : %s ",i,prs->words[i].word);
 		lenstr += prs->words[i].len;
 		if (prs->words[i].alen)
 		{
+			printf("pos element size = %d",prs->words[i].pos.apos[0]);
 			lenstr = SHORTALIGN(lenstr);
 			lenstr += sizeof(uint16) + prs->words[i].pos.apos[0] * sizeof(WordEntryPos);
 		}
+		printf("\n");
 	}
 
 	if (lenstr > MAXSTRPOS)
@@ -254,7 +252,8 @@ Datum
 to_tsvector_byid(PG_FUNCTION_ARGS)
 {
 	Oid			cfgId = PG_GETARG_OID(0);
-	text	   *in = PG_GETARG_TEXT_PP(1);
+	// text	   *in = PG_GETARG_TEXT_PP(1);
+	text	   *in = PG_GETARG_TEXT_PP_PARTIAL(1); /* in this api, tadoc\lzw\rle will pass patial decompressed data.*/
 	ParsedText	prs;
 	TSVector	out;
 
@@ -268,7 +267,26 @@ to_tsvector_byid(PG_FUNCTION_ARGS)
 	prs.pos = 0;
 	prs.words = (ParsedWord *) palloc(sizeof(ParsedWord) * prs.lenwords);
 
-	parsetext(cfgId, &prs, VARDATA_ANY(in), VARSIZE_ANY_EXHDR(in));
+
+	ToastCompressionId cmid = TOAST_COMPRESS_METHOD(in);
+	printf("compression method =  %d\n",cmid);
+	switch (cmid)
+	{
+		/** hocotext*/
+		/** yuxin tang */
+		case TOAST_RLE_COMPRESSION_ID:
+		case TOAST_LZW_COMPRESSION_ID:
+		case TOAST_TADOC_COMPRESSION_ID:
+		case TOAST_PGLZ_COMPRESSION_ID:
+		case TOAST_LZ4_COMPRESSION_ID:
+			parsetext(cfgId, &prs, VARDATA_ANY(in), VARSIZE_ANY_EXHDR(in));
+			break;
+		default:
+			elog(ERROR, "invalid compression method id %d", cmid);
+			return NULL;		/* keep compiler quiet */
+	}
+
+	// parsetext(cfgId, &prs, VARDATA_ANY(in), VARSIZE_ANY_EXHDR(in));
 
 	PG_FREE_IF_COPY(in, 1);
 
