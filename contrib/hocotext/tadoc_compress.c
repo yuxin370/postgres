@@ -290,7 +290,10 @@ void delete_digram(Symbol* symbol) {
 
 /**
  * @brief insert right symbol after left symbol
-*/
+ * 
+ * @param left the last symbol of start rule
+ * @param right the new coming symbol
+ */
 void insert_after(Symbol* left, Symbol* right) {
     join_symbols(right, left->n);   // seg fault here
     join_symbols(left, right);
