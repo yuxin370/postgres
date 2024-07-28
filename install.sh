@@ -15,7 +15,8 @@ make distclean
     --enable-debug \
     --enable-depend \
     CCFLAG=-O3 \
-    CC='gcc'
+    CC='gcc'\
+    --without-icu
 
 make -j 4
 

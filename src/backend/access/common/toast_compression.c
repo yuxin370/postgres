@@ -550,19 +550,13 @@ tadoc_compress_datum(const struct varlena *value)
 						valsize,
 						(char *) inter_res,
 						NULL);
-	len = pglz_compress(inter_res,
-						len,
-						(char *) tmp + VARHDRSZ_COMPRESSED,
-						NULL);
 
-	// len = rle_compress(VARDATA_ANY(value),
-	// 					valsize,
+	// len = pglz_compress(inter_res,
+	// 					len,
 	// 					(char *) tmp + VARHDRSZ_COMPRESSED,
 	// 					NULL);
-	
-	
-	if (len < 0)
-	{
+
+	if (len < 0) {
 		pfree(tmp);
 		return NULL;
 	}

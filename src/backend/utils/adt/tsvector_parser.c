@@ -179,15 +179,20 @@ gettoken_tsvector(TSVectorParseState state,
 				  char **endptr)
 {
 	int			oldstate = 0;
+	// 当前正在解析的单词字符串的位置
 	char	   *curpos = state->word;
+	// 当前解析状态
 	int			statecode = WAITWORD;
 
 	/*
 	 * pos is for collecting the comma delimited list of positions followed by
 	 * the actual token.
 	 */
+	// 存储位置数组的指针
 	WordEntryPos *pos = NULL;
+	// 位置数组的实际长度
 	int			npos = 0;		/* elements of pos used */
+	// 位置数组的分配长度
 	int			posalen = 0;	/* allocated size of pos */
 
 	while (1)
@@ -196,16 +201,20 @@ gettoken_tsvector(TSVectorParseState state,
 		{
 			if (*(state->prsbuf) == '\0')
 				return false;
+			// ' 符号开头意味着后面跟一个复杂函数
 			else if (!state->is_web && t_iseq(state->prsbuf, '\''))
-				statecode = WAITENDCMPLX;
+				statecode = WAITENDCMPLX;	// 等待复杂单词结束
+			// \ 开头意味着后面跟一个转义单词
 			else if (!state->is_web && t_iseq(state->prsbuf, '\\'))
 			{
-				statecode = WAITNEXTCHAR;
+				statecode = WAITNEXTCHAR;	// 等待转义单词结束
 				oldstate = WAITENDWORD;
 			}
+			// 如果是一个操作符
 			else if ((state->oprisdelim && ISOPERATOR(state->prsbuf)) ||
 					 (state->is_web && t_iseq(state->prsbuf, '"')))
 				PRSSYNTAXERROR;
+			// 如果不是空白字符
 			else if (!t_isspace(state->prsbuf))
 			{
 				COPYCHAR(curpos, state->prsbuf);
@@ -213,6 +222,7 @@ gettoken_tsvector(TSVectorParseState state,
 				statecode = WAITENDWORD;
 			}
 		}
+		// 等待转义字符后的下一个字符
 		else if (statecode == WAITNEXTCHAR)
 		{
 			if (*(state->prsbuf) == '\0')
@@ -220,6 +230,7 @@ gettoken_tsvector(TSVectorParseState state,
 						(errcode(ERRCODE_SYNTAX_ERROR),
 						 errmsg("there is no escaped character: \"%s\"",
 								state->bufstart)));
+			// 抄写一个转义字符，然后恢复原有状态
 			else
 			{
 				RESIZEPRSBUF;
@@ -229,13 +240,17 @@ gettoken_tsvector(TSVectorParseState state,
 				statecode = oldstate;
 			}
 		}
+
+		// 等待单词结束
 		else if (statecode == WAITENDWORD)
 		{
+			// 等待转义字符
 			if (!state->is_web && t_iseq(state->prsbuf, '\\'))
 			{
 				statecode = WAITNEXTCHAR;
 				oldstate = WAITENDWORD;
 			}
+			// 单词结束，返回一个 token
 			else if (t_isspace(state->prsbuf) || *(state->prsbuf) == '\0' ||
 					 (state->oprisdelim && ISOPERATOR(state->prsbuf)) ||
 					 (state->is_web && t_iseq(state->prsbuf, '"')))
@@ -246,6 +261,7 @@ gettoken_tsvector(TSVectorParseState state,
 				*(curpos) = '\0';
 				RETURN_TOKEN;
 			}
+			// 进入位置信息解析状态 INPOSINFO
 			else if (t_iseq(state->prsbuf, ':'))
 			{
 				if (curpos == state->word)
@@ -263,6 +279,8 @@ gettoken_tsvector(TSVectorParseState state,
 				curpos += pg_mblen(state->prsbuf);
 			}
 		}
+
+		// 等待复杂单词结束
 		else if (statecode == WAITENDCMPLX)
 		{
 			if (!state->is_web && t_iseq(state->prsbuf, '\''))
@@ -283,6 +301,8 @@ gettoken_tsvector(TSVectorParseState state,
 				curpos += pg_mblen(state->prsbuf);
 			}
 		}
+
+		// 等待复杂字符
 		else if (statecode == WAITCHARCMPLX)
 		{
 			if (!state->is_web && t_iseq(state->prsbuf, '\''))
@@ -308,6 +328,8 @@ gettoken_tsvector(TSVectorParseState state,
 				continue;		/* recheck current character */
 			}
 		}
+
+		// 等待位置信息开始
 		else if (statecode == WAITPOSINFO)
 		{
 			if (t_iseq(state->prsbuf, ':'))
@@ -315,6 +337,8 @@ gettoken_tsvector(TSVectorParseState state,
 			else
 				RETURN_TOKEN;
 		}
+
+		// 解析位置信息中
 		else if (statecode == INPOSINFO)
 		{
 			if (t_isdigit(state->prsbuf))
@@ -344,6 +368,8 @@ gettoken_tsvector(TSVectorParseState state,
 			else
 				PRSSYNTAXERROR;
 		}
+
+		// 等待位置分隔符
 		else if (statecode == WAITPOSDELIM)
 		{
 			if (t_iseq(state->prsbuf, ','))
