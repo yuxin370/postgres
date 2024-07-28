@@ -136,8 +136,9 @@ int32 tadoc_compress(const char *source, int32 slen, char *dest,
 	// first byte: write 
 	char* mode = dest;
 	*mode = (char)0x10;  // tadoc mode
-    uint32_t comp_size = __tadoc_compress(source, slen, dest + 1);
-    return comp_size; //return compressed data size;
+    int32_t comp_size = __tadoc_compress(source, slen, dest + 1);
+    printf("tadoc_compress: compressed size: %u\n", comp_size);
+	return comp_size; //return compressed data size;
 }
 
 /**
@@ -165,11 +166,12 @@ tadoc_decompress(const char *source, int32 slen, char *dest,
 	}
 	sp++; // to skip "mode"
 	sp += sizeof(uint32_t);	// to skip raw_size 
-	uint32_t ret_rawsize = __tadoc_decompress(sp, dest);
+	int32_t ret_rawsize = __tadoc_decompress(sp, dest);
 	if (ret_rawsize != rawsize) {
 		printf("TADOC_DECOMPRESS: invalid data decompression result\n");
 		exit(-1);
 	}
+	printf("tadoc_decompress: decompressed size: %u\n", ret_rawsize);
 	return ret_rawsize;
 }
 
