@@ -7,7 +7,7 @@ CREATE EXTENSION hocotext;
 
 CREATE TABLE dna_seq(seq_id SERIAL PRIMARY KEY,
 exp_date DATE NOT NULL,
-seq_data HOCOTEXT COMPRESSION LZW,
+seq_data TEXT COMPRESSION LZW,
 quality_score DECIMAL(5,2));
 
 CREATE TABLE baseline(seq_id SERIAL PRIMARY KEY,
@@ -20,10 +20,9 @@ exp_date DATE NOT NULL,
 seq_data TEXT STORAGE External,
 quality_score DECIMAL(5,2));
 
-
-explain analyze insert into dna_seq values(9,'2023-03-25', (repeat('hello world ',8000)),95.5); 
-explain analyze insert into baseline values(9,'2023-03-25', (repeat('hello world ',8000)),95.5); 
-insert into baseline_plain values(1,'2023-03-25', repeat('hello world ',2000),95.5); 
+explain analyze insert into dna_seq values(2,'2023-03-25', (repeat('| a b c d e f g h i j k l m n o p q r s t u v w x y z ',40)),95.5); 
+explain analyze insert into dna_seq values(3,'2023-03-25', (repeat('hello world gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wcast-function-type -Wshadow=compatible-local -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation',10)),95.5); 
+explain analyze insert into baseline_plain values(4,'2023-03-25', (repeat('hello world gcc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Wendif-labels -Wmissing-format-attribute -Wimplicit-fallthrough=3 -Wcast-function-type -Wshadow=compatible-local -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation',50)),95.5); 
 
 select hoco_de_lzw(seq_data) from baseline;
 select * from baseline;

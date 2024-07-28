@@ -190,7 +190,7 @@ make_tsvector(ParsedText *prs)
 		lenstr += prs->words[i].len;
 		if (prs->words[i].alen)
 		{
-			printf("pos element size = %d",prs->words[i].pos.apos[0]);
+			printf(" | count = %d",prs->words[i].pos.apos[0]);
 			lenstr = SHORTALIGN(lenstr);
 			lenstr += sizeof(uint16) + prs->words[i].pos.apos[0] * sizeof(WordEntryPos);
 		}
@@ -274,8 +274,10 @@ to_tsvector_byid(PG_FUNCTION_ARGS)
 	{
 		/** hocotext*/
 		/** yuxin tang */
-		case TOAST_RLE_COMPRESSION_ID:
 		case TOAST_LZW_COMPRESSION_ID:
+			parsetext(cfgId, &prs, ((char *) in )+ VARHDRSZ_COMPRESSED, VARSIZE(in) - VARHDRSZ_COMPRESSED);
+			break;
+		case TOAST_RLE_COMPRESSION_ID:
 		case TOAST_TADOC_COMPRESSION_ID:
 		case TOAST_PGLZ_COMPRESSION_ID:
 		case TOAST_LZ4_COMPRESSION_ID:
@@ -298,7 +300,8 @@ to_tsvector_byid(PG_FUNCTION_ARGS)
 Datum
 to_tsvector(PG_FUNCTION_ARGS)
 {
-	text	   *in = PG_GETARG_TEXT_PP(0);
+	// text	   *in = PG_GETARG_TEXT_PP(0);
+	text	   *in = PG_GETARG_TEXT_PP_PARTIAL(0); /* in this api, tadoc\lzw\rle will pass patial decompressed data.*/
 	Oid			cfgId;
 
 	cfgId = getTSCurrentConfig(true);

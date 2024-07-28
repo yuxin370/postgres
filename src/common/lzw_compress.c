@@ -20,7 +20,6 @@
 #include <string.h>
 #include "varatt.h"
 #include "common/lzw_compress.h"
-#include "common/uthash.h"
 
 /* ----------
  * Local definitions
@@ -28,60 +27,17 @@
  */
 
 static const LZW_Strategy lzw_default_strategy = {
-	32,							/* Data chunks less than 32 bytes are not
+	0,							/* Data chunks less than 32 bytes are not
 								 * compressed */
 	INT_MAX,					/* No upper limit on what we'll try to
 								 * compress */
-	25							/* Require 25% compression rate, or not worth
+	0							/* Require 25% compression rate, or not worth
 								 * it */
 };
 const LZW_Strategy *const LZW_strategy_default = &lzw_default_strategy;
 
-
-#define MAX_WORDS_COUNT 99999999
-#define MAX_ENTRY_COUNT 9999999
-#define MAX_ENTRY_SIZE 999999
-
-#define move_ptr(cur_buf,word_size)     \
-    cur_buf += word_size;               \
-    *cur_buf = '\0'
-
-#define buf_put_dict_entry(__bp,__len,__key,__id)                       \
-do{                                                                     \
-    buf_put_int16(__bp,__len);                                           \
-    memcpy(__bp,__key,__len);                                           \
-    __bp+=__len;                                                        \
-    buf_put_int16(__bp,__id);                                            \
-}while(0)
-
-#define buf_get_dict_entry(__bp)                                        \
-do{                                                                     \
-    int32 len = buf_get_int16(__bp);                                     \
-    char tmp[MAX_ENTRY_SIZE];                                           \
-    memcpy(tmp,__bp,len);                                               \
-    tmp[len] = '\0';                                                    \
-    __bp+=len;                                                          \
-    int32 id = buf_get_int16(__bp);                                      \
-    hash_insert_rev_without_check(tmp,id,tmp);                          \
-}while(0)
-
-typedef struct hash_entry {
-    char *key;                 /* key */
-    int32 id;
-    UT_hash_handle hh1;         /* makes this structure hashable, hh1 for key*/
-}hash_entry;
-
-
-typedef struct hash_entry_rev {
-    int32 id;                     /* key */
-    char *key;   
-    char *first;                  /* P */
-    UT_hash_handle hh2;         /* makes this structure hashable, hh1 for key*/
-}hash_entry_rev;
-
-hash_entry *dict = NULL;
-hash_entry_rev *dict_rev = NULL;
-
+static hash_entry *dict = NULL;
+static hash_entry_rev *dict_rev = NULL;
 
 /*
  * Just get a word....
@@ -149,9 +105,9 @@ void print_int(char * dest,char *end){
     printf("\n");
 }
 
-void print_int16(char * dest,char *end){
+void print_int8(char * dest,char *end){
     while(dest < end){
-        printf("%d ",buf_get_int16(dest));
+        printf("%d ",buf_get_int(dest));
     }
     printf("\n");
 }
@@ -204,6 +160,31 @@ void hash_insert_rev(char* ikey, int32 id, char * ifirst) {
         strcpy(it_rev->key,ikey);
         strcpy(it_rev->first,ifirst);
     }
+}
+
+void hash_insert_rev_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst) {
+    struct hash_entry_rev* it_rev;
+
+    it_rev =  hash_find_rev(id);
+    if (it_rev == NULL) {
+        hash_insert_rev_without_check_fill_seq(ikey,id_seqs,id,ifirst);
+    } else {
+        strcpy(it_rev->key,ikey);
+        strcpy(it_rev->first,ifirst);
+        strcpy(it_rev->id_seq,id_seqs);
+    }
+}
+
+void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst) {
+    struct hash_entry_rev* tmp = (struct hash_entry_rev *)palloc(sizeof *tmp);
+    tmp->key = (char *)palloc(strlen(ikey));
+    tmp->first = (char *)palloc(strlen(ifirst));
+    tmp->id_seq = (char *)palloc(strlen(id_seqs));
+    strcpy(tmp->key,ikey);
+    strcpy(tmp->first,ifirst);
+    strcpy(tmp->id_seq,id_seqs);
+    tmp->id = id;
+    HASH_ADD_KEYPTR(hh2, dict_rev, &(tmp->id), sizeof(int32), tmp);
 }
 
 void hash_insert_rev_without_check(char* ikey, int32 id, char * ifirst) {
@@ -275,7 +256,7 @@ void hash_print(int32 type){
         printf("------------------------\n");
         struct hash_entry *s, *tmp;
         HASH_ITER(hh1, dict, s, tmp) {
-        printf("|%14s|%7d|\n",s->key,s->id);
+        printf("|%14s|%7d|%5d|\n",s->key,s->id,strlen(s->key));
         }
         printf("------------------------\n");
 
@@ -285,7 +266,7 @@ void hash_print(int32 type){
         printf("--------------------------------\n");
         struct hash_entry_rev *s, *tmp;
         HASH_ITER(hh2, dict_rev, s, tmp) {
-        printf("|%14s|%7d|%7s|\n",s->key,s->id,s->first);
+        printf("|%14s|%7d|%7s|%5d|\n",s->key,s->id,s->first,strlen(s->key));
         }
         printf("--------------------------------\n");
     
@@ -304,7 +285,6 @@ void hash_print(int32 type){
  * 
 */
 int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
-    printf("---------------- using compression !\n");
 	char *dstart = dp;                         //start of compressed data
     char *stp = sp;
     char* cur_word = (char *)malloc(MAX_ENTRY_SIZE);
@@ -322,7 +302,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     struct hash_entry* tmp = NULL;
     struct hash_entry_rev* tmp_rev = NULL;
     // construct dics;
-    dp+=1; // reserve 1 byte for record size
+    dp+=4; // reserve 1 byte for record size
     while(stp<srcend){
         parse_word_size =getWord(stp,cur_word);
         stp += parse_word_size;
@@ -339,7 +319,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
         word_no++;
     }
     stp = dstart;
-    buf_put_int16(stp,id_no); // fill basic entry count to dest
+    buf_put_int(stp,id_no); // fill basic entry count to dest
     word_count = word_no;
 
     cur_id = input_word[0];
@@ -364,11 +344,15 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
             // is still in dict;
             last_id = tmp->id;
         }else{
+            if(id_no > UINT32_MAX){
+                printf("id_no(%d) > UINT32_MAX(%d), give up compressing.\n",id_no,UINT32_MAX);
+                return -1;
+            }
             hash_insert(buf_base,id_no);
             hash_insert_rev(buf_base,id_no," ");
             id_no++;            
             
-            buf_put_int16(dp,last_id);
+            buf_put_int(dp,last_id);
 
             memcpy(buf_base,cur_word,word_size);
             cur_buf = buf_base + word_size;
@@ -380,9 +364,9 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     }
     
     // put last word entry in buf
-    buf_put_int16(dp,last_id);
+    buf_put_int(dp,last_id);
     *dp = '\0';
-    
+
     dict = NULL;
     dict_rev = NULL;
 
@@ -442,8 +426,9 @@ int32 lzw_compress(const char *source, int32 slen, char *dest,
 
     result_size = lzw_compress_ctrl(sp,srcend,dp);
 
-    if(result_size >= result_max) return -1;
-    return result_size + 4; // 1 for header 
+    if(result_size >= result_max || result_size == -1)
+        return -1;
+    return result_size + 4; // 4 for header 
 }
 
 /**
@@ -462,7 +447,6 @@ int32 lzw_compress(const char *source, int32 slen, char *dest,
 int32
 lzw_decompress(const char *source, int32 slen, char *dest,
 				int32 rawsize, bool check_complete){
-    printf("---------------- using decompression !\n");
 	const unsigned char *sp;
 	const unsigned char *srcend;
 	unsigned char *dp;
@@ -480,13 +464,12 @@ lzw_decompress(const char *source, int32 slen, char *dest,
 		// ereport(ERROR,(errmsg("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read)));
 		pg_printf("rawsize = %d while record rowsize = %d.\n",rawsize,rawsize_read);
 	}
-
-    int32 entry_count = buf_get_int16(sp);
+    print_int(sp,srcend);
+    int32 entry_count = buf_get_int(sp);
     int32 cur_id;
     int32 word_size = 0;
     char *pw = (char *)palloc(MAX_ENTRY_SIZE);
     char *cw = (char *)palloc(MAX_ENTRY_SIZE);
-    char c;
     struct hash_entry_rev* tmp = NULL;
     struct hash_entry_rev* prev = NULL;
 
@@ -495,25 +478,24 @@ lzw_decompress(const char *source, int32 slen, char *dest,
     for(int32 i = 0 ; i < entry_count; i ++){
         buf_get_dict_entry(sp);
     }
-
-    cur_id = buf_get_int16(sp);
+    cur_id = buf_get_int(sp);
     tmp = hash_find_rev(cur_id);
     prev = tmp;
     strcpy(cw,tmp->key);
     strcpy(pw,cw);
     word_size = strlen(cw);
     strncpy(dp,tmp->key,word_size);
-    dp += word_size;
+    move_ptr(dp, word_size);
     
     while(sp < srcend){
-        int32 cur_id = buf_get_int16(sp);
+        int32 cur_id = buf_get_int(sp);
         tmp = hash_find_rev(cur_id);
         if(tmp){
             strcpy(cw,tmp->key);
             word_size = strlen(cw);
             strncpy(dp,cw,word_size);
-            dp += word_size;
-            strcat(pw,tmp->first);             
+            move_ptr(dp,word_size);         
+            strcat(pw,tmp->first);  
             hash_insert_rev(pw,entry_count++,prev->first);
             prev = tmp;
         }else{
@@ -522,7 +504,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
             strcpy(cw,pw); 
             word_size = strlen(cw);          
             strncpy(dp,cw,word_size);
-            dp += word_size;
+            move_ptr(dp,word_size);
         }
         strcpy(pw,cw);
     }

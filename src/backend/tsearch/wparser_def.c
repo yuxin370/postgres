@@ -25,6 +25,7 @@
 #include "tsearch/ts_utils.h"
 #include "utils/builtins.h"
 #include "utils/pg_locale.h"
+#include "common/lzw_compress.h"
 
 
 /* Define me to enable tracing of parser behavior */
@@ -266,6 +267,7 @@ typedef struct TParser
 
 /* forward decls here */
 static bool TParserGet(TParser *prs);
+static bool TParserGet_lzw(TParser *prs);
 
 
 static TParserPosition *
@@ -285,11 +287,50 @@ newTParserPosition(TParserPosition *prev)
 	return res;
 }
 
+
 static TParser *
-TParserInit(char *str, int len)
+TParserInit_lzw(char *str, int len)
 {
 	TParser    *prs = (TParser *) palloc0(sizeof(TParser));
 
+	prs->charmaxlen = pg_database_encoding_max_length();
+	prs->str = str;
+	prs->lenstr = len;
+
+	prs->usewide = false;
+
+	prs->state = newTParserPosition(NULL);
+	prs->state->state = TPS_Base;
+
+#ifdef WPARSER_TRACE
+	fprintf(stderr, "parsing \"%.*s\"\n", len, str);
+#endif
+	printf("prsdata.str = %s, prsdata.len = %d\n",prs->str,prs->lenstr);
+
+	return prs;
+}
+
+
+// big endian
+#define buf_get_int(__bp)                                           \
+({                                                                  \
+    int32 value = 0;                                                  \
+    for(int32 seg = 3 ; seg >= 0 ; seg --,__bp++){                    \
+        value |=  (int32)((*__bp)&0xFF) << (8*seg);                   \
+    }                                                               \
+    value;                                                          \
+})
+
+static TParser *
+TParserInit(char *str, int len)
+{
+	char *sp = str;
+	printf("[TParserInit] buf[len = %d] = %s\n",len,str);
+	// print_int(sp,sp+len);
+	if( (buf_get_int(sp) & 0xc0000000 ) == 0xc0000000 ){
+		return TParserInit_lzw(str, len);
+	}
+	TParser    *prs = (TParser *) palloc0(sizeof(TParser));
 	prs->charmaxlen = pg_database_encoding_max_length();
 	prs->str = str;
 	prs->lenstr = len;
@@ -1705,10 +1746,132 @@ static const TParserStateAction Actions[] = {
 	TPARSERSTATEACTION(TPS_InHyphenUnsignedInt)
 };
 
+int32 entry_count = 0;
+char pw[MAX_ENTRY_SIZE]={0};
+char pw_ids[MAX_ENTRY_SIZE]={0};
+char cw[MAX_ENTRY_SIZE]={0};
+char cw_ids[MAX_ENTRY_SIZE] = {0};
+struct hash_entry_rev* prev = NULL;
+int cur_id_idx = 0;
+static hash_entry *dict = NULL;
+static hash_entry_rev *dict_rev = NULL;
+
+
+void clear_global_variables(){
+	entry_count = 0;
+	memset(pw,0,MAX_ENTRY_SIZE);
+	memset(pw_ids,0,MAX_ENTRY_SIZE);
+	memset(cw,0,MAX_ENTRY_SIZE);
+	memset(cw_ids,0,MAX_ENTRY_SIZE);
+	prev = NULL;
+	cur_id_idx = 0;
+	dict = NULL;
+	dict_rev = NULL;
+}
+
+#define set_prs(__tmp,__prs)\
+do{ 																\
+		char *cur_id_pos = cw_ids + cur_id_idx;						\
+		int32 _cur_id = buf_get_int8(cur_id_pos);					\
+		__tmp = hash_find_rev(_cur_id);								\
+		int32 word_size = strlen(__tmp->key);	    					\
+		strncpy(__prs->token,__tmp->key,word_size);						\
+		__prs->lenbytetoken = word_size;								\
+		__prs->lenchartoken = word_size;								\
+		__prs->type = 1;  /** dont know what is the meaning yet*/ 	\
+		cur_id_idx += 1;											\
+}while(0)
+
+static bool
+TParserGet_lzw(TParser *prs){
+	printf("using TParserGet_lzw.\n");
+	const TParserStateActionItem *item = NULL;
+	struct hash_entry_rev* tmp = NULL;
+	int32 cur_id;
+	int32 id_seq_sizes = strlen(cw_ids);
+	printf("using TParserGet_lzw.\n");
+
+	CHECK_FOR_INTERRUPTS();
+	printf("using TParserGet_lzw.\n");
+
+	Assert(prs->state);
+
+	printf("using TParserGet_lzw.\n");
+	if (prs->state->posbyte >= prs->lenstr && cur_id_idx >= id_seq_sizes){
+		clear_global_variables();
+		return false;
+	}
+
+	printf("using TParserGet_lzw.\n");
+	// to be modified.
+	char *sp = prs->str + prs->state->posbyte;
+
+	// prs->state->pushedAtAction = NULL;
+
+	// printf("---------------------in-----------------------\n");
+	// pg_printf("prs->state->posbyte = %d, prs->str = %s, prs->state->charlen = %d\nprs->token = %s\n",prs->state->posbyte,prs->str,prs->state->charlen,prs->token);
+	// printf("---------------------out-----------------------\n");
+
+	// not last value, prs->type set to 1, else set to 0;
+	printf("using TParserGet_lzw.\n");
+	if(cur_id_idx < id_seq_sizes){
+		printf("[TParserGet_lzw] cur_id_idx = %d    id_seq_sizes = %d.\n",cur_id_idx,id_seq_sizes);
+ 		set_prs(tmp,prs);
+		return true;
+	}
+
+	if(prs->state->posbyte == 0){
+		clear_global_variables();
+    	entry_count = buf_get_int8(sp);
+		// construct the dict
+		for(int32 i = 0 ; i < entry_count; i ++){
+			buf_get_dict_entry_fill_seq(sp);
+		}
+		hash_print(2);
+		cur_id = buf_get_int8(sp);
+		tmp = hash_find_rev(cur_id);
+		prev = tmp;
+		strcpy(cw,tmp->key);
+		strcpy(cw_ids,tmp->id_seq);
+		strcpy(pw,cw);
+		strcpy(pw_ids,cw_ids);
+	}else{
+		cur_id = buf_get_int8(sp);
+		printf("[TParserGet_lzw] cur_id = %d\n",cur_id);
+        tmp = hash_find_rev(cur_id);
+        if(tmp){
+            strcpy(cw,tmp->key);
+            strcpy(cw_ids,tmp->id_seq);          
+            strcat(pw,tmp->first);             
+            strncat(pw_ids,tmp->id_seq,1);             
+            hash_insert_rev_fill_seq(pw,pw_ids,entry_count++,prev->first);
+            prev = tmp;
+        }else{
+            strcat(pw,prev->first); 
+            strncat(pw_ids,prev->id_seq,1);             
+            hash_insert_rev_fill_seq(pw,pw_ids,entry_count++,prev->first);
+            strcpy(cw,pw); 
+            strcpy(cw_ids,pw_ids); 
+        }
+        strcpy(pw,cw);
+        strcpy(pw_ids,cw_ids);
+	}
+
+ 	set_prs(tmp,prs);  
+
+	/** have to be set */
+	prs->state->posbyte += (sp - prs->token);
+
+	return true;
+}
 
 static bool
 TParserGet(TParser *prs)
 {
+	char *sp = prs->str;
+	if( (buf_get_int(sp) & 0xc0000000 ) == 0xc0000000 ){
+		return TParserGet_lzw(prs);
+	}
 	const TParserStateActionItem *item = NULL;
 
 	CHECK_FOR_INTERRUPTS();
@@ -1910,7 +2073,8 @@ prsd_nexttoken(PG_FUNCTION_ARGS)
 
 	*t = p->token;
 	*tlen = p->lenbytetoken;
-
+	
+	printf("\nget a token  t = %s, tlenbyte = %d , tlenchar = %d, type = %d\n",p->token,p->lenbytetoken,p->lenchartoken,p->type);
 	PG_RETURN_INT32(p->type);
 }
 

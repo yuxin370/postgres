@@ -16,9 +16,9 @@
  * ----------
  */
 
-#define MAX_WORDS_COUNT 99999
-#define MAX_ENTRY_COUNT 9999
-#define MAX_ENTRY_SIZE 999
+#define MAX_WORDS_COUNT 99999999
+#define MAX_ENTRY_COUNT 9999999
+#define MAX_ENTRY_SIZE 999999
 
 #define move_ptr(cur_buf,word_size)     \
     cur_buf += word_size;               \
@@ -359,7 +359,8 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     // put last word entry in buf
     buf_put_int8(dp,last_id);
     *dp = '\0';
-
+    dict = NULL;
+    dict_rev = NULL;
     return (int)(dp - dstart);
 }
 
@@ -398,8 +399,7 @@ text * lzw_compress(struct varlena *source,text *result,Oid collid){
     
     SET_VARSIZE(result,4 + result_size + VARHDRSZ);
     
-    dict = NULL;
-    dict_rev = NULL;
+
     return result;
 }
 

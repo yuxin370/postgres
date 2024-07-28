@@ -17,6 +17,7 @@
 #include "tsearch/ts_cache.h"
 #include "tsearch/ts_utils.h"
 #include "varatt.h"
+#include "common/lzw_compress.h"
 
 #define IGNORE_LONGLEXEME	1
 
@@ -363,11 +364,11 @@ parsetext(Oid cfgId, ParsedText *prs, char *buf, int buflen)
 	TSParserCacheEntry *prsobj;
 	void	   *prsdata;
 
-	printf("buf(len=%d) = %s\n",buflen,buf);
 
 	cfg = lookup_ts_config_cache(cfgId);
 	prsobj = lookup_ts_parser_cache(cfg->prsId);
 
+	// prsd_start->TParserInit fill all the data to prs->str
 	prsdata = (void *) DatumGetPointer(FunctionCall2(&prsobj->prsstart,
 													 PointerGetDatum(buf),
 													 Int32GetDatum(buflen)));
@@ -376,6 +377,7 @@ parsetext(Oid cfgId, ParsedText *prs, char *buf, int buflen)
 
 	do
 	{
+		// prsd_nexttoken(get next token)->TParserGet
 		type = DatumGetInt32(FunctionCall3(&(prsobj->prstoken),
 										   PointerGetDatum(prsdata),
 										   PointerGetDatum(&lemm),
@@ -430,6 +432,7 @@ parsetext(Oid cfgId, ParsedText *prs, char *buf, int buflen)
 		}
 	} while (type > 0);
 
+	// prsd_end -> TParserClose
 	FunctionCall1(&(prsobj->prsend), PointerGetDatum(prsdata));
 }
 

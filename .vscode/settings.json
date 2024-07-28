@@ -5,6 +5,11 @@
         "bloomfilter.h": "c",
         "hocotext.h": "c",
         "rle_compress.h": "c",
-        "rel.h": "c"
+        "rel.h": "c",
+        "ts_cache.h": "c",
+        "sstream": "c",
+        "*.tcc": "c",
+        "lzw_compress.h": "c",
+        "uthash.h": "c"
     }
 }
