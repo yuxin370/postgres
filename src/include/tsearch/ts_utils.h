@@ -82,8 +82,11 @@ extern void pushOperator(TSQueryParserState state, int8 oper, int16 distance);
 typedef struct
 {
 	uint16		flags;			/* currently, only TSL_PREFIX */
-	uint16		len;
+	// length of a word
+	uint16		len;	
+	// number of variants of a word	
 	uint16		nvariant;
+	// the length of pos array
 	uint16		alen;
 	union
 	{
@@ -96,14 +99,17 @@ typedef struct
 		 */
 		uint16	   *apos;
 	}			pos;
+	// word ptr
 	char	   *word;
 } ParsedWord;
 
-typedef struct
-{
+typedef struct {
 	ParsedWord *words;
+	// assigned array length for ParsedWords
 	int32		lenwords;
+	// number of current parsed words
 	int32		curwords;
+	// current parse position
 	int32		pos;
 } ParsedText;
 
