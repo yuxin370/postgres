@@ -26,6 +26,7 @@
 #include "utils/builtins.h"
 #include "utils/pg_locale.h"
 #include "common/lzw_compress.h"
+#include "portability/instr_time.h"
 
 
 /* Define me to enable tracing of parser behavior */
@@ -267,7 +268,7 @@ typedef struct TParser
 
 /* forward decls here */
 static bool TParserGet(TParser *prs);
-static bool TParserGet_lzw(TParser *prs);
+// static bool TParserGet_lzw(TParser *prs);
 
 
 static TParserPosition *
@@ -318,6 +319,24 @@ TParserInit_lzw(char *str, int len)
         value |=  (int32)((*__bp)&0xFF) << (8*seg);                   \
     }                                                               \
     value;                                                          \
+})
+
+// big endian
+#define buf_put_int16(__bp,__v)                                                 \
+do {                                                                            \
+    for(int32 seg = 1 ; seg >= 0 ; seg --,__bp++){                                \
+        (*__bp) = (char)( ( ((unsigned)__v) >> ( 8 * seg ) ) & 0xFF );          \
+    }                                                                           \
+}while(0)
+
+// big endian
+#define buf_get_int16(__bp)                                                 \
+({                                                                          \
+    int32 value = 0;                                                          \
+    for(int32 seg = 1 ; seg >= 0 ; seg --,__bp++){                            \
+        value |=  (int32)((*__bp)&0xFF) << (8*seg);                           \
+    }                                                                       \
+    value;                                                                  \
 })
 
 static TParser *
@@ -1753,6 +1772,14 @@ int cur_id_idx = 0;
 static hash_entry *dict = NULL;
 static hash_entry_rev *dict_rev = NULL;
 
+double total_time =0;
+// double hash_find_time =0;
+// double in_getlzw_function_time =0;
+// double basic_dict_construct_time =0;
+// double total_dict_construct_time =0;
+double hash_find_exact_time =0;
+// double hash_find_exact_time_in =0;
+
 
 void clear_global_variables(){
 	entry_count = 0;
@@ -1766,19 +1793,32 @@ void clear_global_variables(){
 	dict_rev = NULL;
 }
 
+static double
+elapsed_time(instr_time *starttime)
+{
+	instr_time	endtime;
+
+	INSTR_TIME_SET_CURRENT(endtime);
+	INSTR_TIME_SUBTRACT(endtime, *starttime);
+	return INSTR_TIME_GET_DOUBLE(endtime);
+}
 
 bool set_prs(TParser *__prs)                                                                              
 {                 
+	// instr_time	starttime_hash_find_exact;
+		// INSTR_TIME_SET_CURRENT(starttime_hash_find_exact);
+
 	struct hash_entry_rev* __tmp = NULL;                                                                               
         char *cur_id_pos = cw_ids + cur_id_idx;                                                            
         int32 _cur_id = buf_get_int8(cur_id_pos) - 1;                                                      
-        HASH_FIND(hh2, dict_rev, &_cur_id, sizeof(int32), __tmp);                                          
+        HASH_FIND(hh2, dict_rev, &_cur_id, sizeof(int32), __tmp);    
         if (__tmp != NULL){   
             cur_id_idx += 1;                                                                                                                                                                                                                                                    
             int32 word_size = strlen(__tmp->key);    
             char c = *(__tmp->key);                                                                      
             if (word_size == 1 && !( (c>=48 && c <= 57) || (c >= 65 && c<=90) || (c >=97 && c <=122) )) {
-            	return false;
+		// hash_find_exact_time += elapsed_time(&starttime_hash_find_exact);
+				return false;
 				// __prs->type = 12; /**space*/                                                                                                                                                                                                                
 			}                                                        
             __prs->token = __tmp->key;                                                                     
@@ -1790,9 +1830,9 @@ bool set_prs(TParser *__prs)
             cur_id_idx += 1;   
 			ereport(ERROR, (errmsg("lzw totsvector corrupted."))) ;
         } 
+		// hash_find_exact_time += elapsed_time(&starttime_hash_find_exact);
 		return true;                                                                                               
 }
-		// strncpy(__prs->token,__tmp->key,word_size);						
 
 
 
@@ -1839,12 +1879,12 @@ void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id) 
 
 #define buf_get_dict_entry_fill_seq(__bp)                           \
 do{                                                                 \
-    int32 len = buf_get_int(__bp);                                  \
+    int32 len = buf_get_int16(__bp);                                  \
     char tmp[MAX_ENTRY_SIZE];                                       \
     memcpy(tmp,__bp,len);                                           \
     tmp[len] = '\0';                                                \
     __bp+=len;                                                      \
-    int32 id = buf_get_int(__bp);                                   \
+    int32 id = buf_get_int16(__bp);                                   \
     char id_seq[2];													\
 	id_seq[0] = (char)((id+1)&0xFF);                     \
 	id_seq[1] = '\0';												\
@@ -1872,84 +1912,181 @@ void print_entry(hash_entry_rev* tmp){
 	print_int8(tmp->id_seq,tmp->id_seq + strlen(tmp->id_seq));
 }
 
-static bool
-TParserGet_lzw(TParser *prs){
-	const TParserStateActionItem *item = NULL;
-	struct hash_entry_rev* tmp = NULL;
-	int32 cur_id;
-	int32 id_seq_sizes = strlen(cw_ids);
 
-	CHECK_FOR_INTERRUPTS();
+// static bool
+// TParserGet_lzw(TParser *prs){
+	// instr_time	starttime;
+	// INSTR_TIME_SET_CURRENT(starttime);
+	// instr_time	starttime_hash_find;
+	// instr_time	starttime_basic_cons;
+	// instr_time	starttime_total_cons;
+	// bool t;
+	// const TParserStateActionItem *item = NULL;
+	// struct hash_entry_rev* tmp = NULL;
+	// int32 cur_id;
+	// int32 id_seq_sizes = strlen(cw_ids);
 
-	Assert(prs->state);
+	// CHECK_FOR_INTERRUPTS();
 
-	if (prs->state->posbyte + 4 >= prs->lenstr && cur_id_idx >= id_seq_sizes){
-		clear_global_variables();
-		return false;
-	}
+	// Assert(prs->state);
 
-	// to be modified.
-	char *sp = prs->str + prs->state->posbyte + 4; // skip the 4byte(int32) header;
-	prs->state->pushedAtAction = NULL;
-	// not last value, prs->type set to 1, else set to 0;
-	if(cur_id_idx < id_seq_sizes){
-		if(!set_prs(prs)){
-			return TParserGet_lzw(prs);
-		}
-		return true;
-	}
+	// if (prs->state->posbyte + 4 >= prs->lenstr && cur_id_idx >= id_seq_sizes){
+	// 	clear_global_variables();
+	// 	return false;
+	// }
 
-	if(prs->state->posbyte == 0){
-		clear_global_variables();
-    	entry_count = buf_get_int(sp);
-		// construct the dict
-		for(int32 i = 0 ; i < entry_count; i ++){
-			buf_get_dict_entry_fill_seq(sp);
-		}
-		cur_id = buf_get_int(sp);
-		HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
-		prev = tmp;
-		// strcpy(cw,tmp->key);
-		strcpy(cw_ids,tmp->id_seq);
-		// strcpy(pw,cw);
-		strcpy(pw_ids,cw_ids);
-	}else{
-		cur_id = buf_get_int(sp);
-		HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
-        if(tmp){
-            // strcpy(cw,tmp->key);
-            strcpy(cw_ids,tmp->id_seq);  
-            // strcat(pw,tmp->first);
-            strncat(pw_ids,tmp->id_seq,1); 
-            hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
-            prev = tmp;
-        }else{
-            // strcat(pw,prev->first); 
-            strncat(pw_ids,prev->id_seq,1);  
-            hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
-            // strcpy(cw,pw); 
-            strcpy(cw_ids,pw_ids); 
-        }
-        // strcpy(pw,cw);
-        strcpy(pw_ids,cw_ids);
-	}
+	// char *sp = prs->str + prs->state->posbyte + 4; // skip the 4byte(int32) header;
+	// prs->state->pushedAtAction = NULL;
+	
+	// if(cur_id_idx < id_seq_sizes){
+	// 	INSTR_TIME_SET_CURRENT(starttime_hash_find);
+	// 	t = set_prs(prs);
+	// 	hash_find_time += elapsed_time(&starttime_hash_find);
+	// 	if(!t){
+	// 		in_getlzw_function_time += elapsed_time(&starttime);
+	// 		return TParserGet_lzw(prs);
+	// 	}
+	// 	in_getlzw_function_time += elapsed_time(&starttime);
+	// 	return true;
+	// }
 
+	// INSTR_TIME_SET_CURRENT(starttime_total_cons);
+	// if(prs->state->posbyte == 0){
+	// 	clear_global_variables();
+    // 	entry_count = buf_get_int(sp);
+	// 	// construct the dict
+	// 	INSTR_TIME_SET_CURRENT(starttime_basic_cons);
+	// 	for(int32 i = 0 ; i < entry_count; i ++){
+	// 		buf_get_dict_entry_fill_seq(sp);
+	// 	}
+	// 	basic_dict_construct_time += elapsed_time(&starttime_basic_cons);
 
-	if(!set_prs(prs)){
-		prs->state->posbyte = sp - (prs->str + 4);
-		return TParserGet_lzw(prs);
-	}
+	// 	cur_id = buf_get_int(sp);
+	// 	HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
+	// 	prev = tmp;
+	// 	// strcpy(cw,tmp->key);
+	// 	strcpy(cw_ids,tmp->id_seq);
+	// 	// strcpy(pw,cw);
+	// 	strcpy(pw_ids,cw_ids);
+	// }else{
+	// 	cur_id = buf_get_int(sp);
+	// 	HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
+    //     if(tmp){
+    //         // strcpy(cw,tmp->key);
+    //         strcpy(cw_ids,tmp->id_seq);  
+    //         // strcat(pw,tmp->first);
+    //         strncat(pw_ids,tmp->id_seq,1); 
+    //         hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
+    //         prev = tmp;
+    //     }else{
+    //         // strcat(pw,prev->first); 
+    //         strncat(pw_ids,prev->id_seq,1);  
+    //         hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
+    //         // strcpy(cw,pw); 
+    //         strcpy(cw_ids,pw_ids); 
+    //     }
+    //     // strcpy(pw,cw);
+    //     strcpy(pw_ids,cw_ids);
+	// }
+	// total_dict_construct_time += elapsed_time(&starttime_total_cons);
 
-	prs->state->posbyte = sp - (prs->str + 4);
-	return true;
-}
+	// INSTR_TIME_SET_CURRENT(starttime_hash_find);
+	// t = set_prs(prs);
+	// hash_find_time += elapsed_time(&starttime_hash_find);
+	// if(!t){
+	// 	prs->state->posbyte = sp - (prs->str + 4);
+	// 	in_getlzw_function_time += elapsed_time(&starttime);
+	// 	return TParserGet_lzw(prs);
+	// }
+
+	// prs->state->posbyte = sp - (prs->str + 4);
+	// in_getlzw_function_time += elapsed_time(&starttime);
+	// return true;
+// }
 
 static bool
 TParserGet(TParser *prs)
 {
+	if(prs->state->posbyte == 0){
+		total_time = 0;
+		hash_find_exact_time = 0;
+	}
+
 	char *sp = prs->str;
 	if( (buf_get_int(sp) & 0xc0000000 ) == 0xc0000000 ){
-		return TParserGet_lzw(prs);
+		instr_time	starttime;
+		INSTR_TIME_SET_CURRENT(starttime);
+		bool t;
+		const TParserStateActionItem *item = NULL;
+		struct hash_entry_rev* tmp = NULL;
+		int32 cur_id;
+		int32 id_seq_sizes = strlen(cw_ids);
+
+		CHECK_FOR_INTERRUPTS();
+
+		Assert(prs->state);
+
+		if (prs->state->posbyte + 4 >= prs->lenstr && cur_id_idx >= id_seq_sizes){
+			clear_global_variables();
+			return false;
+		}
+
+		char *sp = prs->str + prs->state->posbyte + 4; // skip the 2byte(int32) header;
+		prs->state->pushedAtAction = NULL;
+		
+		if(cur_id_idx < id_seq_sizes){
+			t = set_prs(prs);
+			if(!t){
+				return TParserGet(prs);
+			}
+			return true;
+		}
+
+		if(prs->state->posbyte == 0){
+			clear_global_variables();
+			entry_count = buf_get_int16(sp);
+			// construct the dict
+			for(int32 i = 0 ; i < entry_count; i ++){
+				buf_get_dict_entry_fill_seq(sp);
+			}
+
+			cur_id = buf_get_int16(sp);
+			HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
+			prev = tmp;
+			// strcpy(cw,tmp->key);
+			strcpy(cw_ids,tmp->id_seq);
+			// strcpy(pw,cw);
+			strcpy(pw_ids,cw_ids);
+		}else{
+			cur_id = buf_get_int16(sp);
+			HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
+			if(tmp){
+				// strcpy(cw,tmp->key);
+				strcpy(cw_ids,tmp->id_seq);  
+				// strcat(pw,tmp->first);
+				strncat(pw_ids,tmp->id_seq,1); 
+				hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
+				prev = tmp;
+			}else{
+				// strcat(pw,prev->first); 
+				strncat(pw_ids,prev->id_seq,1);  
+				hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
+				// strcpy(cw,pw); 
+				strcpy(cw_ids,pw_ids); 
+			}
+			// strcpy(pw,cw);
+			strcpy(pw_ids,cw_ids);
+		}
+
+		t = set_prs(prs);
+		if(!t){
+			prs->state->posbyte = sp - (prs->str + 4);
+			return TParserGet(prs);
+		}
+
+		prs->state->posbyte = sp - (prs->str + 4);
+		return true;
+		// return TParserGet_lzw(prs);
 	}
 	const TParserStateActionItem *item = NULL;
 
@@ -2146,9 +2283,21 @@ prsd_nexttoken(PG_FUNCTION_ARGS)
 	TParser    *p = (TParser *) PG_GETARG_POINTER(0);
 	char	  **t = (char **) PG_GETARG_POINTER(1);
 	int		   *tlen = (int *) PG_GETARG_POINTER(2);
+	
+	instr_time	starttime;
 
-	if (!TParserGet(p))
+	INSTR_TIME_SET_CURRENT(starttime);
+	if (!TParserGet(p)){
+		char *sp = p->str;
+		if( (buf_get_int(sp) & 0xc0000000 ) == 0xc0000000 ){
+	   	 	printf(" ------ [TParserGet_lzw] cost %f ms,   [hash_find_exact_time]  cost %f ms\n",1000.0 * total_time,1000.0 * hash_find_exact_time);
+	   	 	// printf(" ------ [TParserGet_lzw] cost %f ms, [in TParserGet_lzw function] cost %f ms,  [hash_find] cost %f ms, [hash_find_in] cost %f ms, [hash_find_exact_time]  cost %f ms, [basic_dict_cons] cost %f ms, [total_dict_cons] cost %f ms\n",1000.0 * total_time,1000.0 * in_getlzw_function_time,1000.0 * hash_find_time,1000.0 * hash_find_exact_time_in,1000.0 * hash_find_exact_time,1000.0 * basic_dict_construct_time,1000.0 * total_dict_construct_time);
+		}else{
+	   	 	printf(" ------ [TParserGet] cost %f ms\n",1000.0 * total_time);
+		}
 		PG_RETURN_INT32(0);
+	}
+	total_time += elapsed_time(&starttime);
 
 	*t = p->token;
 	*tlen = p->lenbytetoken;

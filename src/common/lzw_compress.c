@@ -276,7 +276,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     struct hash_entry* tmp = NULL;
     struct hash_entry_rev* tmp_rev = NULL;
     // construct dics;
-    dp+=4; // reserve 1 byte for record size
+    dp+=2; // reserve 1 byte for record size
     while(stp<srcend){
         parse_word_size =getWord(stp,cur_word);
         stp += parse_word_size;
@@ -293,7 +293,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
         word_no++;
     }
     stp = dstart;
-    buf_put_int(stp,id_no); // fill basic entry count to dest
+    buf_put_int16(stp,id_no); // fill basic entry count to dest
     word_count = word_no;
 
     cur_id = input_word[0];
@@ -326,7 +326,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
             hash_insert_rev(buf_base,id_no," ");
             id_no++;            
             
-            buf_put_int(dp,last_id);
+            buf_put_int16(dp,last_id);
 
             memcpy(buf_base,cur_word,word_size);
             cur_buf = buf_base + word_size;
@@ -338,7 +338,7 @@ int32 lzw_compress_ctrl(char *sp,char *srcend,char *dp){
     }
     
     // put last word entry in buf
-    buf_put_int(dp,last_id);
+    buf_put_int16(dp,last_id);
     *dp = '\0';
 
     dict = NULL;
@@ -438,7 +438,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
 		// ereport(ERROR,(errmsg("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read)));
 		pg_printf("rawsize = %d while record rowsize = %d.\n",rawsize,rawsize_read);
 	}
-    int32 entry_count = buf_get_int(sp);
+    int32 entry_count = buf_get_int16(sp);
     int32 cur_id;
     int32 word_size = 0;
     char *pw = (char *)palloc(MAX_ENTRY_SIZE);
@@ -451,7 +451,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
     for(int32 i = 0 ; i < entry_count; i ++){
         buf_get_dict_entry(sp);
     }
-    cur_id = buf_get_int(sp);
+    cur_id = buf_get_int16(sp);
     tmp = hash_find_rev(cur_id);
     prev = tmp;
     strcpy(cw,tmp->key);
@@ -461,7 +461,7 @@ lzw_decompress(const char *source, int32 slen, char *dest,
     move_ptr(dp, word_size);
     
     while(sp < srcend){
-        int32 cur_id = buf_get_int(sp);
+        int32 cur_id = buf_get_int16(sp);
         tmp = hash_find_rev(cur_id);
         if(tmp){
             strcpy(cw,tmp->key);

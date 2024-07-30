@@ -11,6 +11,7 @@
         "*.tcc": "c",
         "lzw_compress.h": "c",
         "uthash.h": "c",
-        "execinfo.h": "c"
+        "execinfo.h": "c",
+        "instr_time.h": "c"
     }
 }

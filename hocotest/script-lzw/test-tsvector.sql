@@ -20,8 +20,8 @@ delete from dna_seq;
 delete from baseline;
 delete from baseline_plain;
 
-explain analyze insert into dna_seq values(2,'2023-03-25', (repeat('afrfrg b c d e f g h i j k l m n o p q r s t u v w x y z',400)),95.5); 
-explain analyze insert into baseline values(2,'2023-03-25', (repeat('afrfrg b c d e f g h i j k l m n o p q r s t u v w x y z',400)),95.5); 
+explain analyze insert into dna_seq values(2,'2023-03-25', (repeat('afrfrg b c d e f g h i j k l m n o p q r s t u v w x y z',40)),95.5); 
+explain analyze insert into baseline values(2,'2023-03-25', (repeat('afrfrg b c d e f g h i j k l m n o p q r s t u v w x y z',40)),95.5); 
 explain analyze insert into baseline_plain values(2,'2023-03-25', (repeat('afrfrg b c d e f g h i j k l m n o p q r s t u v w x y z',400)),95.5); 
 
 /*

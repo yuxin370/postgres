@@ -22,39 +22,6 @@
     cur_buf += word_size;               \
     *cur_buf = '\0'
 
-#define buf_put_dict_entry(__bp,__len,__key,__id)                       \
-do{                                                                     \
-    buf_put_int(__bp,__len);                                           \
-    memcpy(__bp,__key,__len);                                           \
-    __bp+=__len;                                                        \
-    buf_put_int(__bp,__id);                                            \
-}while(0)
-
-#define buf_get_dict_entry(__bp)                                        \
-do{                                                                     \
-    int32 len = buf_get_int(__bp);                                     \
-    char tmp[MAX_ENTRY_SIZE];                                           \
-    memcpy(tmp,__bp,len);                                               \
-    tmp[len] = '\0';                                                    \
-    __bp+=len;                                                          \
-    int32 id = buf_get_int(__bp);                                      \
-    hash_insert_rev_without_check(tmp,id,tmp);                          \
-}while(0)
-
-typedef struct hash_entry {
-    char *key;                 /* key */
-    int32 id;
-    UT_hash_handle hh1;         /* makes this structure hashable, hh1 for key*/
-}hash_entry;
-
-
-typedef struct hash_entry_rev {
-    int32 id;                     /* key */
-    char *key;   
-    char *first;                  /* P */
-    char *id_seq;                 /* id sequence*/
-    UT_hash_handle hh2;         /* makes this structure hashable, hh1 for key*/
-}hash_entry_rev;
 
 
 // big endian
@@ -113,6 +80,39 @@ do {                                                                            
     value;                                                                  \
 })
 
+#define buf_put_dict_entry(__bp,__len,__key,__id)                       \
+do{                                                                     \
+    buf_put_int16(__bp,__len);                                           \
+    memcpy(__bp,__key,__len);                                           \
+    __bp+=__len;                                                        \
+    buf_put_int16(__bp,__id);                                            \
+}while(0)
+
+#define buf_get_dict_entry(__bp)                                        \
+do{                                                                     \
+    int32 len = buf_get_int16(__bp);                                     \
+    char tmp[MAX_ENTRY_SIZE];                                           \
+    memcpy(tmp,__bp,len);                                               \
+    tmp[len] = '\0';                                                    \
+    __bp+=len;                                                          \
+    int32 id = buf_get_int16(__bp);                                      \
+    hash_insert_rev_without_check(tmp,id,tmp);                          \
+}while(0)
+
+typedef struct hash_entry {
+    char *key;                 /* key */
+    int32 id;
+    UT_hash_handle hh1;         /* makes this structure hashable, hh1 for key*/
+}hash_entry;
+
+
+typedef struct hash_entry_rev {
+    int32 id;                     /* key */
+    char *key;   
+    char *first;                  /* P */
+    char *id_seq;                 /* id sequence*/
+    UT_hash_handle hh2;         /* makes this structure hashable, hh1 for key*/
+}hash_entry_rev;
 
 /**
  * @brief parse and print char-array as int32-array 
