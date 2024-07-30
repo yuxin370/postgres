@@ -24,7 +24,6 @@
 #include "common/tadoc_compress.h"
 #include "utils/expandeddatum.h"
 #include "utils/rel.h"
-#include "portability/instr_time.h"
 
 static struct varlena *toast_fetch_datum(struct varlena *attr);
 static struct varlena *toast_fetch_datum_slice(struct varlena *attr,
@@ -555,17 +554,6 @@ toast_fetch_datum_slice(struct varlena *attr, int32 sliceoffset,
 	return result;
 }
 
-
-static double
-elapsed_time(instr_time *starttime)
-{
-	instr_time	endtime;
-
-	INSTR_TIME_SET_CURRENT(endtime);
-	INSTR_TIME_SUBTRACT(endtime, *starttime);
-	return INSTR_TIME_GET_DOUBLE(endtime);
-}
-
 /* ----------
  * toast_decompress_datum -
  *
@@ -577,9 +565,6 @@ toast_decompress_datum(struct varlena *attr,bool partialDecomp)
 	ToastCompressionId cmid;
 
 	Assert(VARATT_IS_COMPRESSED(attr));
-    instr_time	starttime;
-    double totaltime =0;
-    INSTR_TIME_SET_CURRENT(starttime);
 	struct varlena * tmp ;
 	/*
 	 * Fetch the compression method id stored in the compression header and
@@ -593,17 +578,11 @@ toast_decompress_datum(struct varlena *attr,bool partialDecomp)
 		case TOAST_RLE_COMPRESSION_ID:
 			return rle_decompress_datum(attr,partialDecomp);
 		case TOAST_LZW_COMPRESSION_ID:
-			tmp = lzw_decompress_datum(attr,partialDecomp);
-			totaltime += elapsed_time(&starttime);
-			printf(" ------ [lzw_decompressing] cost %f ms\n",1000.0 * totaltime);
-			return tmp;
+			return lzw_decompress_datum(attr,partialDecomp);
 		case TOAST_TADOC_COMPRESSION_ID:
 			return tadoc_decompress_datum(attr,partialDecomp);
 		case TOAST_PGLZ_COMPRESSION_ID:
-			tmp = pglz_decompress_datum(attr);
-			totaltime += elapsed_time(&starttime);
-			printf(" ------ [pglz_decompressing] cost %f ms\n",1000.0 * totaltime);
-			return tmp;
+			return pglz_decompress_datum(attr);
 		case TOAST_LZ4_COMPRESSION_ID:
 			return lz4_decompress_datum(attr);
 		default:
