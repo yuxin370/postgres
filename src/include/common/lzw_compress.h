@@ -41,18 +41,6 @@ do{                                                                     \
     hash_insert_rev_without_check(tmp,id,tmp);                          \
 }while(0)
 
-#define buf_get_dict_entry_fill_seq(__bp)                               \
-do{                                                                     \
-    int32 len = buf_get_int(__bp);                                     \
-    char tmp[MAX_ENTRY_SIZE];                                           \
-    memcpy(tmp,__bp,len);                                               \
-    tmp[len] = '\0';                                                    \
-    __bp+=len;                                                          \
-    int32 id = buf_get_int(__bp);                                      \
-    char id_seq = (char)(((unsigned)id) & 0xFF );                       \
-    hash_insert_rev_without_check_fill_seq(tmp,&id_seq,id,tmp);         \
-}while(0)
-
 typedef struct hash_entry {
     char *key;                 /* key */
     int32 id;
@@ -150,9 +138,9 @@ extern void hash_insert(char* ikey, int32 id);
 
 extern void hash_insert_rev(char* ikey, int32 id, char * ifirst);
 
-extern void hash_insert_rev_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst);
+// extern void hash_insert_rev_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst);
 
-extern void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst);
+// extern void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst);
 
 extern void hash_insert_rev_without_check(char* ikey, int32 id, char * ifirst);
 

@@ -277,7 +277,9 @@ lowerstr_with_len(const char *str, int len)
 	 * Also, for a C locale there is no need to process as multibyte. From
 	 * backend/utils/adt/oracle_compat.c Teodor
 	 */
-	if (pg_database_encoding_max_length() > 1 && !database_ctype_is_c)
+	// if (pg_database_encoding_max_length() > 1 && !database_ctype_is_c)
+	// to be fixed.
+	if (false)
 	{
 		wchar_t    *wstr,
 				   *wptr;

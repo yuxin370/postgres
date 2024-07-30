@@ -61,8 +61,7 @@ int32 getWord(char *buf,char *res) {
     // every time get a single char
     while ((c = *buf++) != 0) {
 
-        if (!(c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' ||
-              c == '.' || c == ';' || c == '@' || c == '?' || c == '"' || c == '\'')) {
+        if(( (c>=48 && c <= 57) || (c >= 65 && c<=90) || (c >=97 && c <=122) )){
             // if not a boundary just return the char
             *ptr++ = c;       // add c to the buffer
             indicator = 1; // set the indicator
@@ -107,7 +106,7 @@ void print_int(char * dest,char *end){
 
 void print_int8(char * dest,char *end){
     while(dest < end){
-        printf("%d ",buf_get_int(dest));
+        printf("%d ",buf_get_int8(dest));
     }
     printf("\n");
 }
@@ -140,7 +139,7 @@ void hash_insert(char* ikey, int32 id) {
     it = hash_find(ikey);
     if (it == NULL) {
         struct hash_entry* tmp = (struct hash_entry *)palloc(sizeof *tmp);
-        tmp->key = (char *)palloc(strlen(ikey));
+        tmp->key = (char *)palloc(strlen(ikey)+1);
         strcpy(tmp->key,ikey);
         tmp->id = id;
         HASH_ADD_KEYPTR(hh1, dict, tmp->key, strlen(tmp->key), tmp);
@@ -162,35 +161,10 @@ void hash_insert_rev(char* ikey, int32 id, char * ifirst) {
     }
 }
 
-void hash_insert_rev_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst) {
-    struct hash_entry_rev* it_rev;
-
-    it_rev =  hash_find_rev(id);
-    if (it_rev == NULL) {
-        hash_insert_rev_without_check_fill_seq(ikey,id_seqs,id,ifirst);
-    } else {
-        strcpy(it_rev->key,ikey);
-        strcpy(it_rev->first,ifirst);
-        strcpy(it_rev->id_seq,id_seqs);
-    }
-}
-
-void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id, char * ifirst) {
-    struct hash_entry_rev* tmp = (struct hash_entry_rev *)palloc(sizeof *tmp);
-    tmp->key = (char *)palloc(strlen(ikey));
-    tmp->first = (char *)palloc(strlen(ifirst));
-    tmp->id_seq = (char *)palloc(strlen(id_seqs));
-    strcpy(tmp->key,ikey);
-    strcpy(tmp->first,ifirst);
-    strcpy(tmp->id_seq,id_seqs);
-    tmp->id = id;
-    HASH_ADD_KEYPTR(hh2, dict_rev, &(tmp->id), sizeof(int32), tmp);
-}
-
 void hash_insert_rev_without_check(char* ikey, int32 id, char * ifirst) {
     struct hash_entry_rev* tmp = (struct hash_entry_rev *)palloc(sizeof *tmp);
-    tmp->key = (char *)palloc(strlen(ikey));
-    tmp->first = (char *)palloc(strlen(ifirst));
+    tmp->key = (char *)palloc(strlen(ikey)+1);
+    tmp->first = (char *)palloc(strlen(ifirst)+1);
     strcpy(tmp->key,ikey);
     strcpy(tmp->first,ifirst);
     tmp->id = id;
@@ -464,7 +438,6 @@ lzw_decompress(const char *source, int32 slen, char *dest,
 		// ereport(ERROR,(errmsg("rawsize = %d while record rowsize = %d.",rawsize,rawsize_read)));
 		pg_printf("rawsize = %d while record rowsize = %d.\n",rawsize,rawsize_read);
 	}
-    print_int(sp,srcend);
     int32 entry_count = buf_get_int(sp);
     int32 cur_id;
     int32 word_size = 0;

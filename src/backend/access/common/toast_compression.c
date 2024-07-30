@@ -385,7 +385,7 @@ lzw_compress_datum(const struct varlena *value)
 						valsize,
 						(char *) tmp + VARHDRSZ_COMPRESSED,
 						NULL);
-	ereport(LOG,(errmsg("lzw_compress finished. compressed size = %d.",len)));
+	// ereport(LOG,(errmsg("lzw_compress finished. compressed size = %d.",len)));
 	
 	if (len < 0)
 	{
@@ -411,7 +411,6 @@ lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
 	char * inter_res;
 	int32 rawsize;
 	int32 rawsize_1;
-	printf("lzw_decompressing. partialDecomp = %d\n",partialDecomp);
 	/* allocate memory for the uncompressed data */
 	if(!partialDecomp){
 		result = (struct varlena *) palloc(VARDATA_COMPRESSED_GET_EXTSIZE(value) + VARHDRSZ);
@@ -434,7 +433,7 @@ lzw_decompress_datum(const struct varlena *value,bool partialDecomp)
 								VARSIZE(value) - VARHDRSZ_COMPRESSED,
 								VARDATA(result),
 								VARDATA_COMPRESSED_GET_EXTSIZE(value), false);
-		ereport(LOG,(errmsg("lzw_decompress finished. rawsize size = %d.",rawsize)));
+		// ereport(LOG,(errmsg("lzw_decompress finished. rawsize size = %d.",rawsize)));
 	}else{
 		// do nothing
 		result = (struct varlena *) palloc(VARSIZE(value));

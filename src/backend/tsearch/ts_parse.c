@@ -206,6 +206,7 @@ LexizeExec(LexizeData *ld, ParsedLex **correspondLexem)
 
 				ld->dictState.isend = ld->dictState.getnext = false;
 				ld->dictState.private_state = NULL;
+				//dsnowball_lexize
 				res = (TSLexeme *) DatumGetPointer(FunctionCall4(&(dict->lexize),
 																 PointerGetDatum(dict->dictData),
 																 PointerGetDatum(curValLemm),

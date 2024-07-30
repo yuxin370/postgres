@@ -305,7 +305,6 @@ TParserInit_lzw(char *str, int len)
 #ifdef WPARSER_TRACE
 	fprintf(stderr, "parsing \"%.*s\"\n", len, str);
 #endif
-	printf("prsdata.str = %s, prsdata.len = %d\n",prs->str,prs->lenstr);
 
 	return prs;
 }
@@ -325,8 +324,6 @@ static TParser *
 TParserInit(char *str, int len)
 {
 	char *sp = str;
-	printf("[TParserInit] buf[len = %d] = %s\n",len,str);
-	// print_int(sp,sp+len);
 	if( (buf_get_int(sp) & 0xc0000000 ) == 0xc0000000 ){
 		return TParserInit_lzw(str, len);
 	}
@@ -1747,9 +1744,9 @@ static const TParserStateAction Actions[] = {
 };
 
 int32 entry_count = 0;
-char pw[MAX_ENTRY_SIZE]={0};
+// char pw[MAX_ENTRY_SIZE]={0};
 char pw_ids[MAX_ENTRY_SIZE]={0};
-char cw[MAX_ENTRY_SIZE]={0};
+// char cw[MAX_ENTRY_SIZE]={0};
 char cw_ids[MAX_ENTRY_SIZE] = {0};
 struct hash_entry_rev* prev = NULL;
 int cur_id_idx = 0;
@@ -1759,9 +1756,9 @@ static hash_entry_rev *dict_rev = NULL;
 
 void clear_global_variables(){
 	entry_count = 0;
-	memset(pw,0,MAX_ENTRY_SIZE);
+	// memset(pw,0,MAX_ENTRY_SIZE);
 	memset(pw_ids,0,MAX_ENTRY_SIZE);
-	memset(cw,0,MAX_ENTRY_SIZE);
+	// memset(cw,0,MAX_ENTRY_SIZE);
 	memset(cw_ids,0,MAX_ENTRY_SIZE);
 	prev = NULL;
 	cur_id_idx = 0;
@@ -1769,99 +1766,181 @@ void clear_global_variables(){
 	dict_rev = NULL;
 }
 
-#define set_prs(__tmp,__prs)\
-do{ 																\
-		char *cur_id_pos = cw_ids + cur_id_idx;						\
-		int32 _cur_id = buf_get_int8(cur_id_pos);					\
-		__tmp = hash_find_rev(_cur_id);								\
-		int32 word_size = strlen(__tmp->key);	    					\
-		strncpy(__prs->token,__tmp->key,word_size);						\
-		__prs->lenbytetoken = word_size;								\
-		__prs->lenchartoken = word_size;								\
-		__prs->type = 1;  /** dont know what is the meaning yet*/ 	\
-		cur_id_idx += 1;											\
+
+bool set_prs(TParser *__prs)                                                                              
+{                 
+	struct hash_entry_rev* __tmp = NULL;                                                                               
+        char *cur_id_pos = cw_ids + cur_id_idx;                                                            
+        int32 _cur_id = buf_get_int8(cur_id_pos) - 1;                                                      
+        HASH_FIND(hh2, dict_rev, &_cur_id, sizeof(int32), __tmp);                                          
+        if (__tmp != NULL){   
+            cur_id_idx += 1;                                                                                                                                                                                                                                                    
+            int32 word_size = strlen(__tmp->key);    
+            char c = *(__tmp->key);                                                                      
+            if (word_size == 1 && !( (c>=48 && c <= 57) || (c >= 65 && c<=90) || (c >=97 && c <=122) )) {
+            	return false;
+				// __prs->type = 12; /**space*/                                                                                                                                                                                                                
+			}                                                        
+            __prs->token = __tmp->key;                                                                     
+            __prs->lenbytetoken = word_size;                                                               
+            __prs->lenchartoken = word_size;                                                               
+           	__prs->type = 1; /**normal ascii words*/                                       
+        }else{            
+			// should never get here                                                                                      
+            cur_id_idx += 1;   
+			ereport(ERROR, (errmsg("lzw totsvector corrupted."))) ;
+        } 
+		return true;                                                                                               
+}
+		// strncpy(__prs->token,__tmp->key,word_size);						
+
+
+
+void hash_insert_rev_fill_seq(char* ikey, char* id_seqs,int32 id) {
+    struct hash_entry_rev* it_rev;
+	cur_id_idx = 0;
+    it_rev =  hash_find_rev(id);
+    if (it_rev == NULL) {
+        hash_insert_rev_without_check_fill_seq_nokey(id_seqs,id);
+    } else {
+        strcpy(it_rev->key,ikey);
+        strcpy(it_rev->id_seq,id_seqs);
+    }
+}
+
+void hash_insert_rev_fill_seq_nokey( char* id_seqs,int32 id) {
+    struct hash_entry_rev* it_rev;
+	cur_id_idx = 0;
+    it_rev =  hash_find_rev(id);
+    if (it_rev == NULL) {
+        hash_insert_rev_without_check_fill_seq_nokey(id_seqs,id);
+    } else {
+        strcpy(it_rev->id_seq,id_seqs);
+    }
+}
+
+void hash_insert_rev_without_check_fill_seq_nokey( char* id_seqs,int32 id) {
+    struct hash_entry_rev* tmp = (struct hash_entry_rev *)palloc(sizeof *tmp);
+    tmp->id_seq = (char *)palloc(strlen(id_seqs)+1);
+    strcpy(tmp->id_seq,id_seqs);
+    tmp->id = id;
+    HASH_ADD_KEYPTR(hh2, dict_rev, &(tmp->id), sizeof(int32), tmp);
+}
+
+void hash_insert_rev_without_check_fill_seq(char* ikey, char* id_seqs,int32 id) {
+    struct hash_entry_rev* tmp = (struct hash_entry_rev *)palloc(sizeof *tmp);
+    tmp->key = (char *)palloc(strlen(ikey)+1);
+    tmp->id_seq = (char *)palloc(strlen(id_seqs)+1);
+    strcpy(tmp->key,ikey);
+    strcpy(tmp->id_seq,id_seqs);
+    tmp->id = id;
+    HASH_ADD_KEYPTR(hh2, dict_rev, &(tmp->id), sizeof(int32), tmp);
+}
+
+#define buf_get_dict_entry_fill_seq(__bp)                           \
+do{                                                                 \
+    int32 len = buf_get_int(__bp);                                  \
+    char tmp[MAX_ENTRY_SIZE];                                       \
+    memcpy(tmp,__bp,len);                                           \
+    tmp[len] = '\0';                                                \
+    __bp+=len;                                                      \
+    int32 id = buf_get_int(__bp);                                   \
+    char id_seq[2];													\
+	id_seq[0] = (char)((id+1)&0xFF);                     \
+	id_seq[1] = '\0';												\
+    hash_insert_rev_without_check_fill_seq(tmp,id_seq,id);     \
 }while(0)
+
+void hash_print_rev(){
+    // print the hash table contents 
+
+    printf("------------------------------------------\n");
+    printf("|        key   |   id  | first |keylen| id_seq\n");
+    printf("------------------------------------------\n");
+    struct hash_entry_rev *s, *tmp;
+    HASH_ITER(hh2, dict_rev, s, tmp) {
+    	printf("|%14s|%7d|%7s|%5d|",s->key,s->id,s->first,strlen(s->key));
+		print_int8(s->id_seq,s->id_seq + strlen(s->id_seq));
+    }
+    printf("------------------------------------------\n");
+}
+
+
+void print_entry(hash_entry_rev* tmp){
+	printf(" --- print entry --- \n");
+	printf("key = %s, id = %d, first = %s, id_seq = ",tmp->key,tmp->id,tmp->first);
+	print_int8(tmp->id_seq,tmp->id_seq + strlen(tmp->id_seq));
+}
 
 static bool
 TParserGet_lzw(TParser *prs){
-	printf("using TParserGet_lzw.\n");
 	const TParserStateActionItem *item = NULL;
 	struct hash_entry_rev* tmp = NULL;
 	int32 cur_id;
 	int32 id_seq_sizes = strlen(cw_ids);
-	printf("using TParserGet_lzw.\n");
 
 	CHECK_FOR_INTERRUPTS();
-	printf("using TParserGet_lzw.\n");
 
 	Assert(prs->state);
 
-	printf("using TParserGet_lzw.\n");
-	if (prs->state->posbyte >= prs->lenstr && cur_id_idx >= id_seq_sizes){
+	if (prs->state->posbyte + 4 >= prs->lenstr && cur_id_idx >= id_seq_sizes){
 		clear_global_variables();
 		return false;
 	}
 
-	printf("using TParserGet_lzw.\n");
 	// to be modified.
-	char *sp = prs->str + prs->state->posbyte;
-
-	// prs->state->pushedAtAction = NULL;
-
-	// printf("---------------------in-----------------------\n");
-	// pg_printf("prs->state->posbyte = %d, prs->str = %s, prs->state->charlen = %d\nprs->token = %s\n",prs->state->posbyte,prs->str,prs->state->charlen,prs->token);
-	// printf("---------------------out-----------------------\n");
-
+	char *sp = prs->str + prs->state->posbyte + 4; // skip the 4byte(int32) header;
+	prs->state->pushedAtAction = NULL;
 	// not last value, prs->type set to 1, else set to 0;
-	printf("using TParserGet_lzw.\n");
 	if(cur_id_idx < id_seq_sizes){
-		printf("[TParserGet_lzw] cur_id_idx = %d    id_seq_sizes = %d.\n",cur_id_idx,id_seq_sizes);
- 		set_prs(tmp,prs);
+		if(!set_prs(prs)){
+			return TParserGet_lzw(prs);
+		}
 		return true;
 	}
 
 	if(prs->state->posbyte == 0){
 		clear_global_variables();
-    	entry_count = buf_get_int8(sp);
+    	entry_count = buf_get_int(sp);
 		// construct the dict
 		for(int32 i = 0 ; i < entry_count; i ++){
 			buf_get_dict_entry_fill_seq(sp);
 		}
-		hash_print(2);
-		cur_id = buf_get_int8(sp);
-		tmp = hash_find_rev(cur_id);
+		cur_id = buf_get_int(sp);
+		HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
 		prev = tmp;
-		strcpy(cw,tmp->key);
+		// strcpy(cw,tmp->key);
 		strcpy(cw_ids,tmp->id_seq);
-		strcpy(pw,cw);
+		// strcpy(pw,cw);
 		strcpy(pw_ids,cw_ids);
 	}else{
-		cur_id = buf_get_int8(sp);
-		printf("[TParserGet_lzw] cur_id = %d\n",cur_id);
-        tmp = hash_find_rev(cur_id);
+		cur_id = buf_get_int(sp);
+		HASH_FIND(hh2, dict_rev, &cur_id, sizeof(int32), tmp);
         if(tmp){
-            strcpy(cw,tmp->key);
-            strcpy(cw_ids,tmp->id_seq);          
-            strcat(pw,tmp->first);             
-            strncat(pw_ids,tmp->id_seq,1);             
-            hash_insert_rev_fill_seq(pw,pw_ids,entry_count++,prev->first);
+            // strcpy(cw,tmp->key);
+            strcpy(cw_ids,tmp->id_seq);  
+            // strcat(pw,tmp->first);
+            strncat(pw_ids,tmp->id_seq,1); 
+            hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
             prev = tmp;
         }else{
-            strcat(pw,prev->first); 
-            strncat(pw_ids,prev->id_seq,1);             
-            hash_insert_rev_fill_seq(pw,pw_ids,entry_count++,prev->first);
-            strcpy(cw,pw); 
+            // strcat(pw,prev->first); 
+            strncat(pw_ids,prev->id_seq,1);  
+            hash_insert_rev_fill_seq_nokey(pw_ids,entry_count++);
+            // strcpy(cw,pw); 
             strcpy(cw_ids,pw_ids); 
         }
-        strcpy(pw,cw);
+        // strcpy(pw,cw);
         strcpy(pw_ids,cw_ids);
 	}
 
- 	set_prs(tmp,prs);  
 
-	/** have to be set */
-	prs->state->posbyte += (sp - prs->token);
+	if(!set_prs(prs)){
+		prs->state->posbyte = sp - (prs->str + 4);
+		return TParserGet_lzw(prs);
+	}
 
+	prs->state->posbyte = sp - (prs->str + 4);
 	return true;
 }
 
@@ -2073,8 +2152,6 @@ prsd_nexttoken(PG_FUNCTION_ARGS)
 
 	*t = p->token;
 	*tlen = p->lenbytetoken;
-	
-	printf("\nget a token  t = %s, tlenbyte = %d , tlenchar = %d, type = %d\n",p->token,p->lenbytetoken,p->lenchartoken,p->type);
 	PG_RETURN_INT32(p->type);
 }
 

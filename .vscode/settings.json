@@ -10,6 +10,7 @@
         "sstream": "c",
         "*.tcc": "c",
         "lzw_compress.h": "c",
-        "uthash.h": "c"
+        "uthash.h": "c",
+        "execinfo.h": "c"
     }
 }

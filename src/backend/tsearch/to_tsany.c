@@ -181,20 +181,15 @@ make_tsvector(ParsedText *prs)
 	if (prs->curwords > 0)
 		prs->curwords = uniqueWORD(prs->words, prs->curwords);
 
-	printf("-------------------------in make_tsvector---------------------\n");
-	printf("prs.curwords = %d prs.lenwords = %d prs.pos = %d\n",prs->curwords,prs->lenwords,prs->pos);
 	/* Determine space needed */
 	for (i = 0; i < prs->curwords; i++)
 	{
-		printf("i = %d, word : %s ",i,prs->words[i].word);
 		lenstr += prs->words[i].len;
 		if (prs->words[i].alen)
 		{
-			printf(" | count = %d",prs->words[i].pos.apos[0]);
 			lenstr = SHORTALIGN(lenstr);
 			lenstr += sizeof(uint16) + prs->words[i].pos.apos[0] * sizeof(WordEntryPos);
 		}
-		printf("\n");
 	}
 
 	if (lenstr > MAXSTRPOS)
@@ -269,7 +264,6 @@ to_tsvector_byid(PG_FUNCTION_ARGS)
 
 
 	ToastCompressionId cmid = TOAST_COMPRESS_METHOD(in);
-	printf("compression method =  %d\n",cmid);
 	switch (cmid)
 	{
 		/** hocotext*/
