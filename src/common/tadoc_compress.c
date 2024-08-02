@@ -18,6 +18,8 @@
 #include "common/tadoc_compress.h"
 #include <assert.h>
 
+// #define DEBUG
+
 #ifdef DEBUG
     #define debug(fmt, ...) fprintf(stdout, fmt, __VA_ARGS__)
 #else
@@ -136,9 +138,17 @@ int32 tadoc_compress(const char *source, int32 slen, char *dest,
 	// first byte: write 
 	char* mode = dest;
 	*mode = (char)0x10;  // tadoc mode
-    int32_t comp_size = __tadoc_compress(source, slen, dest + 1);
+    int32_t comp_size = __tadoc_compress(source, slen, dest + 1) + 1;
     printf("tadoc_compress: compressed size: %u\n", comp_size);
 	return comp_size; //return compressed data size;
+}
+
+void check_per_byte(char * sp) {
+	int32 i = 0;
+	while (*sp == 0) {
+		printf("byte %d: %c\n", i, *sp);
+		sp++; i++;
+	}
 }
 
 /**
@@ -159,16 +169,16 @@ tadoc_decompress(const char *source, int32 slen, char *dest,
 				int32 rawsize, bool check_complete){
     // send error message if not tadoc compression mode
 	char* sp = source;
-	char* mode = *sp;
+	char* mode = sp;
+	// check_per_byte(sp);
 	if (*mode != (char)0x10) {
 		printf("TADOC_COMPRESS: The data send to tadoc decompress has invalid mode!\n");
-		exit(-1);
+		return -1;
 	}
 	sp++; // to skip "mode"
-	sp += sizeof(uint32_t);	// to skip raw_size 
 	int32_t ret_rawsize = __tadoc_decompress(sp, dest);
 	if (ret_rawsize != rawsize) {
-		printf("TADOC_DECOMPRESS: invalid data decompression result\n");
+		printf("TADOC_DECOMPRESS: invalid data decompression result %d\n", ret_rawsize);
 		exit(-1);
 	}
 	printf("tadoc_decompress: decompressed size: %u\n", ret_rawsize);

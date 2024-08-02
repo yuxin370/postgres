@@ -11,7 +11,7 @@ make distclean
 #
 
 # 调整预配置，并设置编译选项O0，不开启任何的编译优化，这是为了后面更好的看到完整的调试信息
-./configure --prefix=/usr \
+./configure --prefix=/usr/local/pgsql/ \
     --enable-debug \
     --enable-depend \
     CCFLAG=-O3 \
